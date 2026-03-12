@@ -35,6 +35,9 @@ add_executable(${PROJECT_NAME}
     ${SRC_DIR}/main.cpp
     ${SRC_FILES}
     ${HEADER_FILES}
+        include/Map.h
+        include/Map.hpp
+        include/Map.hpp
 )
 
 if(MSVC)
