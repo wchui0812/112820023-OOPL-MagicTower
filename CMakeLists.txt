@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(REPLACE_WITH_YOUR_PROJECT_NAME)
+project(MagicTower)
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -25,6 +25,8 @@ FetchContent_MakeAvailable(ptsd)
 include(files.cmake)
 set(SRC_DIR ${CMAKE_SOURCE_DIR}/src)
 set(INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)
+#list(TRANSFORM SRC_FILES PREPEND ${CMAKE_SOURCE_DIR}/)
+#list(TRANSFORM INCLUDE_FILES PREPEND ${CMAKE_SOURCE_DIR}/)
 list(TRANSFORM SRC_FILES PREPEND ${SRC_DIR}/)
 list(TRANSFORM INCLUDE_FILES PREPEND ${INCLUDE_DIR}/)
 
@@ -32,12 +34,15 @@ list(TRANSFORM INCLUDE_FILES PREPEND ${INCLUDE_DIR}/)
 # file(GLOB_RECURSE HEADER_FILES include/*)
 
 add_executable(${PROJECT_NAME}
-    ${SRC_DIR}/main.cpp
-    ${SRC_FILES}
-    ${HEADER_FILES}
-        include/Map.h
-        include/Map.hpp
-        include/Map.hpp
+    #${SRC_FILES}
+    #${INCLUDE_FILES}
+        src/App/App.cpp
+        src/App/main.cpp
+        src/Map/Map.cpp
+
+        include/App/App.hpp
+        include/Map/Map.hpp
+        include/App/BackgroundImage.hpp
 )
 
 if(MSVC)
@@ -56,6 +61,7 @@ endif()
 target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${DEPENDENCY_INCLUDE_DIRS})
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/PTSD/include)
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(${PROJECT_NAME} PUBLIC ${INCLUDE_DIR})
 
 target_link_libraries(${PROJECT_NAME}
     SDL2::SDL2main
