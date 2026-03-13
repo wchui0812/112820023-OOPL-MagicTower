@@ -25,21 +25,20 @@ FetchContent_MakeAvailable(ptsd)
 include(files.cmake)
 set(SRC_DIR ${CMAKE_SOURCE_DIR}/src)
 set(INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)
-#list(TRANSFORM SRC_FILES PREPEND ${CMAKE_SOURCE_DIR}/)
-#list(TRANSFORM INCLUDE_FILES PREPEND ${CMAKE_SOURCE_DIR}/)
-list(TRANSFORM SRC_FILES PREPEND ${SRC_DIR}/)
-list(TRANSFORM INCLUDE_FILES PREPEND ${INCLUDE_DIR}/)
+list(TRANSFORM SRC_FILES PREPEND ${CMAKE_SOURCE_DIR}/)
+list(TRANSFORM INCLUDE_FILES PREPEND ${CMAKE_SOURCE_DIR}/)
+#list(TRANSFORM SRC_FILES PREPEND ${SRC_DIR}/)
+#list(TRANSFORM INCLUDE_FILES PREPEND ${INCLUDE_DIR}/)
 
 # file(GLOB_RECURSE SRC_FILES src/*)
 # file(GLOB_RECURSE HEADER_FILES include/*)
 
 add_executable(${PROJECT_NAME}
-    #${SRC_FILES}
-    #${INCLUDE_FILES}
+    ${SRC_FILES}
         src/App/App.cpp
         src/App/main.cpp
         src/Map/Map.cpp
-
+    ${INCLUDE_FILES}
         include/App/App.hpp
         include/Map/Map.hpp
         include/App/BackgroundImage.hpp

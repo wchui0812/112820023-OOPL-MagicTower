@@ -1,11 +1,14 @@
 #include "Map/Map.hpp"
+#include "Util/Renderer.hpp"
 
 Map::Map() 
-    : m_Wall("../Resources/Image/Background/Map/wall.png"),   // 對應你的實際路徑
-      m_Floor("../Resources/Image/Background/Map/floor.png") // 對應你的實際路徑
+    : m_Wall(RESOURCE_DIR "/Image/Road/wall_b.bmp"),   // 對應你的實際路徑
+      m_Floor(RESOURCE_DIR "/Image/Road/road.bmp") // 對應你的實際路徑
 {}
 
 void Map::Draw() {
+    static Util::Renderer renderer;
+
     for (int i = 0; i < 11; ++i) {     // 列 (Y軸)
         for (int j = 0; j < 11; ++j) { // 行 (X軸)
             
@@ -22,4 +25,5 @@ void Map::Draw() {
             }
         }
     }
+    renderer.Update();
 }
