@@ -40,7 +40,7 @@ private:
 
     Direction m_CurrentDir = Direction::DOWN;
     int m_FrameIndex = 0;
-    float m_MoveDist = 60.0f;
+    float m_MoveDist = 56.0f;
 
     // 儲存所有預載圖片的容器
     std::map<Direction, std::vector<std::shared_ptr<Util::Image>>> m_AnimationFrames;

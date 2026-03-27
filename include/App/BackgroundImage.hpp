@@ -13,6 +13,11 @@ public:
         m_Drawable = std::make_shared<Util::Image>(path);
     }
 
+
+    [[nodiscard]] std::shared_ptr<Core::Drawable> GetDrawable() const {
+        return m_Drawable;
+    }
+
     void SetScale(const glm::vec2& scale) {
         m_Transform.scale = scale;
     }

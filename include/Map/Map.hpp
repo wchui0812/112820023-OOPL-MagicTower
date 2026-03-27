@@ -10,6 +10,9 @@ class Map {
 public:
     Map();
     void Draw(); // 這是核心的雙層 for 迴圈所在
+
+    void UpdateAnimation(float deltaTime);
+
     // 從檔案載入特定樓層
     void LoadLevel(const std::string& filePath);
 
@@ -30,7 +33,7 @@ public:
     }
 
     // 控制樓層
-    void SetLevel(int level) {
+    void SetLevel(const int level) {
         m_CurrentLevel = level;
     }
 
@@ -50,10 +53,15 @@ private:
 
     BackgroundImage m_Wall;  // 牆壁物件
     BackgroundImage m_Floor; // 地板物件
-    BackgroundImage m_Lava;
-    BackgroundImage m_Shine;
+    BackgroundImage m_Lava1;
+    BackgroundImage m_Lava2;
+    BackgroundImage m_Shine1;
+    BackgroundImage m_Shine2;
     BackgroundImage m_UpStairs;   // 5: 上樓
     BackgroundImage m_DownStairs;
+
+    float m_AnimationTimer = 0.0f;
+    bool m_ShowAltFrame = false;
 };
 
 #endif

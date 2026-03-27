@@ -3,7 +3,9 @@
 
 void Stair::CheckAndTransport(glm::vec2& playerPos, Map& map, const glm::vec2& moveVec) {
     int tileType = map.GetTileType(playerPos.x, playerPos.y);
-    float moveDist = 60.0f; // 你的格子大小
+    float moveDist = 56.0f; // 你的格子大小
+
+    LOG_DEBUG("Player is standing on Tile Type: {}", tileType);
 
     if (tileType == 5 || tileType == 4) {
         int targetType = (tileType == 5) ? 4 : 5; // 上樓找下樓梯(4)，下樓找上樓梯(5)
@@ -23,11 +25,18 @@ void Stair::CheckAndTransport(glm::vec2& playerPos, Map& map, const glm::vec2& m
         // 嘗試照著原本的方向推一格
         glm::vec2 nextPos = targetStair + (moveVec * moveDist);
 
-        auto isInside = [](const glm::vec2& pos) {
-            return pos.x >= -330.0f && pos.x <= 330.0f &&
-                   pos.y >= -330.0f && pos.y <= 330.0f;
+        float startX = -165.0f;
+        float startY = 308.0f;
+        float tileSize = 56.0f;
+        float mapSize = 11.0f * tileSize;
+
+        // 定義新的地圖邊界範圍
+        auto isInside = [&](const glm::vec2& pos) {
+            return pos.x >= startX && pos.x <= (startX + mapSize) &&
+                   pos.y <= startY && pos.y >= (startY - mapSize);
         };
 
+        // 使用新邊界進行落腳點檢查
         if (isInside(nextPos) && map.IsWalkable(nextPos.x, nextPos.y)) {
             playerPos = nextPos;
         } else {

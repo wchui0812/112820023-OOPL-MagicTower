@@ -22,6 +22,7 @@ public:
 private:
     Map m_GameMap;
     std::shared_ptr<Player> m_Player;
+    std::shared_ptr<BackgroundImage> m_MainBackground;
 
     State m_CurrentState = State::START;
 

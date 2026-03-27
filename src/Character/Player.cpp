@@ -23,7 +23,7 @@ Player::Player() {
 }
 
 void Player::Update(Map& map) {
-    float moveDist = 60.0f;
+    float moveDist = 56.0f;
     glm::vec2 nextPos = m_Transform.translation;
     glm::vec2 moveVec = {0, 0}; // 新增：用來記錄移動方向
     bool moved = false;

@@ -8,20 +8,24 @@
 Map::Map() 
     : m_Wall(RESOURCE_DIR "/Image/Road/wall_b.bmp"),
       m_Floor(RESOURCE_DIR "/Image/Road/road.bmp"),
-      m_Lava(RESOURCE_DIR "/Image/Road/lava.bmp"),
-      m_Shine(RESOURCE_DIR "/Image/Road/wall_shine.bmp"),
+      m_Lava1(RESOURCE_DIR "/Image/Road/lava.bmp"),
+      m_Lava2(RESOURCE_DIR "/Image/Road/lava2.bmp"),
+      m_Shine1(RESOURCE_DIR "/Image/Road/wall_shine.bmp"),
+      m_Shine2(RESOURCE_DIR "/Image/Road/wall_shine2.bmp"),
       m_UpStairs(RESOURCE_DIR "/Image/Background/Stair/upstair.bmp"),   // 5
       m_DownStairs(RESOURCE_DIR "/Image/Background/Stair/downstair.bmp") // 4
 {
-    float newScale = 0.78f;
+    float newScale = 0.73f;
     m_Wall.SetScale({newScale, newScale});
     m_Floor.SetScale({newScale, newScale});
-    m_Lava.SetScale({newScale, newScale});
-    m_Shine.SetScale({newScale, newScale});
+    m_Lava1.SetScale({newScale, newScale});
+    m_Lava2.SetScale({newScale, newScale});
+    m_Shine1.SetScale({newScale, newScale});
+    m_Shine2.SetScale({newScale, newScale});
     m_UpStairs.SetScale({newScale, newScale});
     m_DownStairs.SetScale({newScale, newScale});
 
-    m_TileSize = 60.0f;
+    m_TileSize = 56.0f;
 
     for (int i = 0; i < 25; ++i) {
         // 動態組合路徑：D:/.../Resources/Levels/map0.txt, map1.txt ...
@@ -32,6 +36,14 @@ Map::Map()
     }
 
     m_CurrentLevel = 0;
+}
+
+void Map::UpdateAnimation(float deltaTime) {
+    m_AnimationTimer += deltaTime;
+    if (m_AnimationTimer >= 0.5f) { // 每 0.5 秒切換一次
+        m_ShowAltFrame = !m_ShowAltFrame;
+        m_AnimationTimer = 0.0f;
+    }
 }
 
 void Map::LoadLevel(const std::string& filePath) {
@@ -57,14 +69,94 @@ void Map::LoadLevel(const std::string& filePath) {
     LOG_INFO("成功載入樓層: {}", filePath);
 }
 
+void Map::Draw() {
+    if (m_MapData.empty()) return;
+    Util::Renderer renderer;
+
+    float startX = -165.0f;
+    float startY = 308.0f;
+
+    auto& currentMap = m_MapData[m_CurrentLevel];
+
+    for (int i = 0; i < 11; ++i) {
+        for (int j = 0; j < 11; ++j) {
+            float posX = startX + (j * m_TileSize) + (m_TileSize / 2.0f);
+            float posY = startY - (i * m_TileSize) - (m_TileSize / 2.0f);
+
+            int tileType = currentMap[i][j];
+
+            if (tileType != 0 && tileType != 1 && tileType != 2 && tileType != 3 && tileType != 4 && tileType != 5) {
+                LOG_DEBUG("座標 ({}, {}) 讀到了未知數字: {}", i, j, tileType);
+            }
+
+            BackgroundImage* target = nullptr; // 用指標暫存要畫的圖片
+
+            // --- 圖片選取邏輯 ---
+            if (tileType == 1) { // 牆壁
+                m_Wall.SetPosition({posX, posY});
+                m_Wall.SetZIndex(1.0f);
+                renderer.AddChild(std::make_shared<BackgroundImage>(m_Wall));
+            }
+            else if (tileType == 2) { // 岩漿動畫
+                // 根據 m_ShowAltFrame 決定畫哪張
+                //BackgroundImage& lava = m_ShowAltFrame ? m_Lava2 : m_Lava1;
+                //lava.SetPosition({posX, posY});
+                //lava.SetZIndex(1.0f);
+                //renderer.AddChild(std::shared_ptr<Util::GameObject>(&lava, [](Util::GameObject*){}));
+                if (m_ShowAltFrame) {
+                    m_Lava2.SetPosition({posX, posY});
+                    m_Lava2.SetZIndex(1.0f);
+                    renderer.AddChild(std::make_shared<BackgroundImage>(m_Lava2));
+                } else {
+                    m_Lava1.SetPosition({posX, posY});
+                    m_Lava1.SetZIndex(1.0f);
+                    renderer.AddChild(std::make_shared<BackgroundImage>(m_Lava1));
+                }
+            }
+            else if (tileType == 3) { // 閃爍牆動畫
+                //BackgroundImage& shine = m_ShowAltFrame ? m_Shine2 : m_Shine1;
+                //shine.SetPosition({posX, posY});
+                //shine.SetZIndex(1.0f);
+                //renderer.AddChild(std::shared_ptr<Util::GameObject>(&shine, [](Util::GameObject*){}));
+                if (m_ShowAltFrame) {
+                    m_Shine2.SetPosition({posX, posY});
+                    m_Shine2.SetZIndex(1.0f);
+                    renderer.AddChild(std::make_shared<BackgroundImage>(m_Shine2));
+                } else {
+                    m_Shine1.SetPosition({posX, posY});
+                    m_Shine1.SetZIndex(1.0f);
+                    renderer.AddChild(std::make_shared<BackgroundImage>(m_Shine1));
+                }
+            }
+            else if (tileType == 4) { // 下樓梯
+                m_UpStairs.SetPosition({posX, posY});
+                m_UpStairs.SetZIndex(1.0f);
+                renderer.AddChild(std::make_shared<BackgroundImage>(m_UpStairs));
+            }
+            else if (tileType == 5) { // 上樓梯
+                m_DownStairs.SetPosition({posX, posY});
+                m_DownStairs.SetZIndex(1.0f);
+                renderer.AddChild(std::make_shared<BackgroundImage>(m_DownStairs));
+            }
+            else {
+                m_Floor.SetPosition({posX, posY});
+                m_Floor.SetZIndex(1.0f);
+                renderer.AddChild(std::make_shared<BackgroundImage>(m_Floor));
+            }
+
+        }
+    }
+    renderer.Update();
+}
+
 int Map::GetTileType(float x, float y) const {
-    float totalSize = 11.0f * m_TileSize;
-    float offsetX = -totalSize / 2.0f;
-    float offsetY = -totalSize / 2.0f;
+    float startX = -165.0f;
+    float startY = 308.0f;
+    float tileSize = 56.0f;
 
     // 換算成索引
-    int col = static_cast<int>((x - offsetX) / m_TileSize);
-    int row = 10 - static_cast<int>((y - offsetY) / m_TileSize);
+    int col = static_cast<int>((x - startX) / tileSize);
+    int row = static_cast<int>((startY - y) / tileSize);
 
     // 邊界安全檢查
     if (row < 0 || row >= 11 || col < 0 || col >= 11) {
@@ -74,69 +166,20 @@ int Map::GetTileType(float x, float y) const {
     return m_MapData[m_CurrentLevel][row][col];
 }
 
-void Map::Draw() {
-    if (m_MapData.empty()) return;
-    Util::Renderer renderer;
-
-    // 1. 動態計算偏移量
-    // 地圖總寬度是 (格數 11 * 每格大小 77)，除以 2 得到中心偏移
-    // 加上負號讓座標系往左下平移，使地圖中心對準視窗 (0,0)
-    float totalSize = 11.0f * m_TileSize;
-    float offsetX = -totalSize / 2.0f;
-    float offsetY = -totalSize / 2.0f;
-
-    auto& currentMap = m_MapData[m_CurrentLevel];
-
-    for (int i = 0; i < 11; ++i) {     // 列 (Y軸)
-        for (int j = 0; j < 11; ++j) { // 行 (X軸)
-            
-            // 計算每個格子在螢幕上的座標
-            float posX = j * m_TileSize + offsetX + (m_TileSize / 2.0f);
-            float posY = (10 - i) * m_TileSize + offsetY + (m_TileSize / 2.0f);
-
-            int tileType = currentMap[i][j];
-
-            if (currentMap[i][j] == 1) {
-                m_Wall.SetPosition({posX, posY});
-                renderer.AddChild(std::make_shared<BackgroundImage>(m_Wall));
-            }
-            else if (tileType == 2) {
-                m_Lava.SetPosition({posX, posY});
-                renderer.AddChild(std::make_shared<BackgroundImage>(m_Lava));
-            }
-            else if (tileType == 3) {
-                m_Shine.SetPosition({posX, posY});
-                renderer.AddChild(std::make_shared<BackgroundImage>(m_Shine));
-            }
-            else if (tileType == 5) { // 上樓梯
-                m_UpStairs.SetPosition({posX, posY});
-                renderer.AddChild(std::make_shared<BackgroundImage>(m_UpStairs));
-            } else if (tileType == 4) { // 下樓梯
-                m_DownStairs.SetPosition({posX, posY});
-                renderer.AddChild(std::make_shared<BackgroundImage>(m_DownStairs));
-            }
-            else {
-                m_Floor.SetPosition({posX, posY});
-                renderer.AddChild(std::make_shared<BackgroundImage>(m_Floor));
-            }
-        }
-    }
-    renderer.Update();
-}
-
 bool Map::IsWalkable(float x, float y) const {
     // 1. 計算偏移量（與 Draw 函式一致）
-    float totalSize = 11.0f * m_TileSize;
-    float offsetX = -totalSize / 2.0f;
-    float offsetY = -totalSize / 2.0f;
+    float startX = -165.0f;
+    float startY = 308.0f;
+    float mapSize = 11.0f * m_TileSize;
 
-    // 將螢幕座標轉換為「相對於地圖左下角」的距離
-    float relativeX = x - offsetX;
-    float relativeY = y - offsetY;
+    if (x < startX || x >= (startX + mapSize) ||
+        y > startY || y <= (startY - mapSize)) {
+        return false; // 直接擋掉，不讓它進去算索引
+        }
 
     // 2. 將螢幕座標 (x, y) 轉換為陣列索引 (row, col)
-    int col = static_cast<int>(relativeX / m_TileSize);
-    int row = 10 - static_cast<int>(relativeY / m_TileSize);
+    int col = static_cast<int>((x - startX + 0.1f) / m_TileSize);
+    int row = static_cast<int>((startY - y + 0.1f) / m_TileSize);
 
     // 3. 邊界檢查：超出 11x11 範圍視為不能走
     if (row < 0 || row >= 11 || col < 0 || col >= 11) {
@@ -152,16 +195,15 @@ bool Map::IsWalkable(float x, float y) const {
 
 glm::vec2 Map::FindTilePosition(int targetType) const {
     auto& currentMap = m_MapData[m_CurrentLevel];
-    float totalSize = 11.0f * m_TileSize;
-    float offsetX = -totalSize / 2.0f;
-    float offsetY = -totalSize / 2.0f;
+    float startX = -165.0f;
+    float startY = 308.0f;
+    float tileSize = 56.0f;
 
     for (int i = 0; i < 11; ++i) {
         for (int j = 0; j < 11; ++j) {
-            if (currentMap[i][j] == targetType) {
-                // 換算回螢幕座標
-                float posX = j * m_TileSize + offsetX + (m_TileSize / 2.0f);
-                float posY = (10 - i) * m_TileSize + offsetY + (m_TileSize / 2.0f);
+            if (m_MapData[m_CurrentLevel][i][j] == targetType) {
+                float posX = startX + (j * tileSize) + (tileSize / 2.0f);
+                float posY = startY - (i * tileSize) - (tileSize / 2.0f);
                 return {posX, posY};
             }
         }
