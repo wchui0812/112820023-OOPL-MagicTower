@@ -1,0 +1,7 @@
+yellow key  10
+blue key    11
+red key     12
+red potion  31 (HP +200)
+blue potion 32 (HP +500)
+ruby        33 (ATK +3)
+sapphire    34 (DEF +3)

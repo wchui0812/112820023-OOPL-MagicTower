@@ -12,10 +12,10 @@ void Stair::CheckAndTransport(glm::vec2& playerPos, Map& map, const glm::vec2& m
 
         if (tileType == 5) {
             map.NextLevel();
-            LOG_INFO("Upstair！now is at layer：{}", map.GetCurrentLevel() + 1);
+            LOG_INFO("Upstair, now is at layer：{}", map.GetCurrentLevel() + 1);
         } else {
             map.PrevLevel();
-            LOG_INFO("Downstair！now is at layer：{}", map.GetCurrentLevel() + 1);
+            LOG_INFO("Downstair, now is at layer：{}", map.GetCurrentLevel() + 1);
         }
 
         // 1. 先找到目標樓梯在該層的中心座標

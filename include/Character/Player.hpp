@@ -35,12 +35,22 @@ public:
 
     void Update(Map & map);
 
+    int m_Hp = 1000;
+    int m_Atk = 10;
+    int m_Def = 10;
+    int m_YellowKeys = 1;
+    int m_BlueKeys = 1;
+    int m_RedKeys = 1;
+
+
 private:
     void NextFrame();
 
     Direction m_CurrentDir = Direction::DOWN;
     int m_FrameIndex = 0;
     float m_MoveDist = 56.0f;
+
+    int GetYellowKeyCount() const { return m_YellowKeys; }
 
     // 儲存所有預載圖片的容器
     std::map<Direction, std::vector<std::shared_ptr<Util::Image>>> m_AnimationFrames;

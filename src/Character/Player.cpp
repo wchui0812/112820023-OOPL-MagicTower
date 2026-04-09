@@ -24,47 +24,87 @@ Player::Player() {
 
 void Player::Update(Map& map) {
     float moveDist = 56.0f;
-    glm::vec2 nextPos = m_Transform.translation;
-    glm::vec2 moveVec = {0, 0}; // 新增：用來記錄移動方向
+    glm::vec2 currentPos = m_Transform.translation;
+    glm::vec2 targetPos = currentPos; // 用來存放「預計要去的那一格」
+    glm::vec2 moveVec = {0, 0};
     bool moved = false;
 
+    // 1. 根據輸入決定「目標格子」 targetPos
     if (Util::Input::IsKeyDown(Util::Keycode::UP)) {
         SetDirection(Direction::UP);
-        if (map.IsWalkable(nextPos.x, nextPos.y + moveDist)) {
-            nextPos.y += moveDist;
-            moveVec = {0, 1}; // 向上
-            moved = true;
-        }
+        targetPos.y += moveDist;
+        moveVec = {0, 1};
     }
     else if (Util::Input::IsKeyDown(Util::Keycode::DOWN)) {
         SetDirection(Direction::DOWN);
-        float nextY = nextPos.y - moveDist;
-        if (nextY >= -330.0f && map.IsWalkable(nextPos.x, nextY)) {
-            nextPos.y -= moveDist;
-            moveVec = {0, -1}; // 向下
-            moved = true;
-        }
+        targetPos.y -= moveDist;
+        moveVec = {0, -1};
     }
     else if (Util::Input::IsKeyDown(Util::Keycode::LEFT)) {
         SetDirection(Direction::LEFT);
-        if (map.IsWalkable(nextPos.x - moveDist, nextPos.y)) {
-            nextPos.x -= moveDist;
-            moveVec = {-1, 0}; // 向左
-            moved = true;
-        }
+        targetPos.x -= moveDist;
+        moveVec = {-1, 0};
     }
     else if (Util::Input::IsKeyDown(Util::Keycode::RIGHT)) {
         SetDirection(Direction::RIGHT);
-        if (map.IsWalkable(nextPos.x + moveDist, nextPos.y)) {
-            nextPos.x += moveDist;
-            moveVec = {1, 0}; // 向右
-            moved = true;
-        }
+        targetPos.x += moveDist;
+        moveVec = {1, 0};
     }
 
+    // 如果沒有按下任何鍵，直接結束
+    if (targetPos == currentPos) return;
+
+    // 2. 取得目標格子的編號 (包含物品層與地形層)
+    int tileType = map.GetTileType(targetPos.x, targetPos.y);
+
+    // 3. 處理撿起物品 (10-12)
+    if (tileType >= 10 && tileType <= 12) {
+        if (tileType == 10) m_YellowKeys++;
+        else if (tileType == 11) m_BlueKeys++;
+        else if (tileType == 12) m_RedKeys++;
+
+        map.RemoveTile(targetPos.x, targetPos.y);
+        m_Transform.translation = targetPos; // 踏上去
+        moved = true;
+    }
+
+    else if (tileType >= 31 && tileType <= 34) {
+        if (tileType == 31) m_Hp += 200;  // 紅血瓶
+        else if (tileType == 32) m_Hp += 500;  // 藍血瓶
+        else if (tileType == 33) m_Atk += 3;   // 紅寶石
+        else if (tileType == 34) m_Def += 3;   // 藍寶石
+
+        map.RemoveTile(targetPos.x, targetPos.y);
+        m_Transform.translation = targetPos;
+        moved = true;
+        LOG_INFO("Item acquired, current status - HP: {}, ATK: {}, DEF: {}", m_Hp, m_Atk, m_Def);
+    }
+
+    // 4. 處理開門 (21-25)
+    else if (tileType >= 21 && tileType <= 25) {
+        bool opened = false;
+        if (tileType == 21 && m_YellowKeys > 0) { m_YellowKeys--; opened = true; }
+        else if (tileType == 22 && m_BlueKeys > 0) { m_BlueKeys--; opened = true; }
+        else if (tileType == 23 && m_RedKeys > 0) { m_RedKeys--; opened = true; }
+        // 綠門與鐵門...
+
+        if (opened) {
+            //map.RemoveTile(targetPos.x, targetPos.y);
+            map.TriggerDoorAnimation(targetPos.x, targetPos.y, tileType); // <-- 改成這行
+            LOG_INFO("The door is open.");
+            // 開門後玩家通常保持原位，下一格再走過去；或者直接踏上去：
+            // m_Transform.translation = targetPos;
+            // moved = true;
+        }
+    }
+    // 5. 處理普通行走 (0, 4, 5)
+    else if (map.IsWalkable(targetPos.x, targetPos.y)) {
+        m_Transform.translation = targetPos;
+        moved = true;
+    }
+
+    // 6. 處理樓層傳送
     if (moved) {
-        m_Transform.translation = nextPos;
-        // 傳入 moveVec，讓 Stair 知道切換樓層後要往哪邊推
         Stair::CheckAndTransport(m_Transform.translation, map, moveVec);
     }
 }

@@ -4,3 +4,8 @@ lava 2
 wall_shine 3
 downstair 4
 upstair 5
+yellow door 21
+blue door   22
+red door    23
+green door  24
+ironforce   25
