@@ -7,7 +7,7 @@ Door::Door(DoorType type) :
         type == DoorType::BLUE   ? RESOURCE_DIR "/Image/Door/blue_door1.bmp"   :
         type == DoorType::RED    ? RESOURCE_DIR "/Image/Door/red_door1.bmp"    :
         type == DoorType::GREEN  ? RESOURCE_DIR "/Image/Door/green_door1.bmp"  :
-                                   RESOURCE_DIR "/Image/Door/iron_fence1.bmp"
+                                   RESOURCE_DIR "/Image/Door/iron_door1.bmp"
     ) ,
     m_Type(type)
 {
@@ -16,6 +16,7 @@ Door::Door(DoorType type) :
     else if (type == DoorType::BLUE) colorName = "blue";
     else if (type == DoorType::RED) colorName = "red";
     else if (type == DoorType::GREEN) colorName = "green";
+    else if (type == DoorType::IRON) colorName = "iron";
 
     // 載入 5 張動畫幀 (0 是閉合, 4 是全開)
     m_Frames.clear();

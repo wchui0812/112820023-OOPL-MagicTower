@@ -40,8 +40,9 @@ add_executable(${PROJECT_NAME}
         src/Map/Map.cpp
         src/Map/Stair.cpp
         src/Map/Door.cpp
-        src/Item/Key.cpp
         src/Character/Player.cpp
+        src/Item/Item.cpp
+        src/System/CollisionHandler.cpp
 
     ${INCLUDE_FILES}
         include/App/App.hpp
@@ -49,11 +50,11 @@ add_executable(${PROJECT_NAME}
         include/Map/Map.hpp
         include/Map/Stair.hpp
         include/Map/Door.hpp
-        include/Item/Key.hpp
         include/Character/Player.hpp
         include/Character/Character.hpp
         include/Item/Item.hpp
-        src/Item/Item.cpp
+        include/System/CollisionHandler.hpp
+
 
 
 )

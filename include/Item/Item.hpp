@@ -6,6 +6,9 @@
 class Item : public BackgroundImage {
 public:
     enum class ItemType {
+        YELLOWKEY = 10,
+        BLUEKEY = 11,
+        REDKEY = 12,
         COIN = 30,
         RED_POTION = 31,
         BLUE_POTION = 32,
@@ -14,9 +17,9 @@ public:
         SWORD_E = 35,
         MAGIC_KEY = 36,
         SHIELD_C = 37,
-        JUMP_WING = 38,
-        CROSS = 39,
-        WIND_COMPASS = 40,
+        SMALL_WING = 38,
+        CROSS = 39, // 給仙子後，全能力提升33%（也就是乘４／３後進位）
+        WIND_COMPASS = 40, // 穿越樓層
         SWORD_C = 41,
         SHIELD_D = 42,
         GEM_DIGGER = 43,
@@ -24,8 +27,8 @@ public:
         HOLY_WATER = 45,
         SWORD_B = 46,
         SHIELD_A = 47,
-        WING = 48,
-        RED_VERI = 49,
+        RED_VERI = 48,
+        BLUE_VERI = 49,
 
     };
 

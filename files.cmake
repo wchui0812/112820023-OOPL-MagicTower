@@ -5,7 +5,8 @@ set(SRC_FILES
         src/Map/Map.cpp
         src/Map/Stair.cpp
         src/Map/Door.cpp
-        src/Item/Key.cpp
+        src/Item/Item.cpp
+        src/System/CollisionHandler.cpp
 )
 
 set(INCLUDE_FILES
@@ -15,7 +16,8 @@ set(INCLUDE_FILES
         include/Map/Map.hpp
         include/Map/Stair.hpp
         include/Map/Door.hpp
-        include/Item/Key.hpp
+        include/Item/Item.hpp
+        include/System/CollisionHandler.hpp
 )
 
 set(TEST_FILES

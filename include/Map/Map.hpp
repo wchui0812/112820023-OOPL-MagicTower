@@ -6,7 +6,6 @@
 #include "App/BackgroundImage.hpp" // 使用你現有的背景圖片類別
 #include "Map/Stair.hpp"
 #include "Map/Door.hpp"
-#include "Item/Key.hpp"
 #include "Item/Item.hpp"
 
 class Map {
@@ -87,14 +86,29 @@ private:
     Door m_RedDoor;    // 23
     Door m_GreenDoor; // 24
     Door m_IronFence; // 25
-    Key m_YellowKeyObj; // 10
-    Key m_BlueKeyObj; // 11
-    Key m_RedKeyObj; // 12
+    Item m_YellowKeyObj; // 10
+    Item m_BlueKeyObj; // 11
+    Item m_RedKeyObj; // 12
+    Item m_CoinObj;
     Item m_RedPotionObj;  // 31
     Item m_BluePotionObj; // 32
     Item m_RubyObj;     // 33
     Item m_SapphireObj;    // 34
-
+    Item m_SwordEObj;
+    Item m_MagicKeyObj;
+    Item m_ShieldCObj;
+    Item m_SmallWingObj;
+    Item m_CrossObj;
+    Item m_WindCompassObj;
+    Item m_SwordCObj;
+    Item m_ShieldDObj;
+    Item m_GemDiggerObj;
+    Item m_BigWingObj;
+    Item m_HolyWaterObj;
+    Item m_SwordBObj;
+    Item m_ShieldAObj;
+    Item m_RebVeriObj;
+    Item m_BlueVeriObj;
 
     float m_AnimationTimer = 0.0f;
     bool m_ShowAltFrame = false;

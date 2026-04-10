@@ -20,13 +20,29 @@ Map::Map()
       m_RedDoor(Door::DoorType::RED),
       m_GreenDoor(Door::DoorType::GREEN),
       m_IronFence(Door::DoorType::IRON),
-      m_YellowKeyObj(Key::KeyType::YELLOW),
-      m_BlueKeyObj(Key::KeyType::BLUE),
-      m_RedKeyObj(Key::KeyType::RED),
+      m_YellowKeyObj(Item::ItemType::YELLOWKEY),
+      m_BlueKeyObj(Item::ItemType::BLUEKEY),
+      m_RedKeyObj(Item::ItemType::REDKEY),
+      m_CoinObj(Item::ItemType::COIN),
       m_RedPotionObj(Item::ItemType::RED_POTION),
       m_BluePotionObj(Item::ItemType::BLUE_POTION),
       m_RubyObj(Item::ItemType::RUBY),
-      m_SapphireObj(Item::ItemType::SAPPHIRE)
+      m_SapphireObj(Item::ItemType::SAPPHIRE),
+      m_SwordEObj(Item::ItemType::SWORD_E),
+      m_MagicKeyObj(Item::ItemType::MAGIC_KEY),
+      m_ShieldCObj(Item::ItemType::SHIELD_C),
+      m_SmallWingObj(Item::ItemType::SMALL_WING),
+      m_CrossObj(Item::ItemType::CROSS),
+      m_WindCompassObj(Item::ItemType::WIND_COMPASS),
+      m_SwordCObj(Item::ItemType::SWORD_C),
+      m_ShieldDObj(Item::ItemType::SHIELD_D),
+      m_GemDiggerObj(Item::ItemType::GEM_DIGGER),
+      m_BigWingObj(Item::ItemType::BIG_WING),
+      m_HolyWaterObj(Item::ItemType::HOLY_WATER),
+      m_SwordBObj(Item::ItemType::SWORD_B),
+      m_ShieldAObj(Item::ItemType::SHIELD_A),
+      m_RebVeriObj(Item::ItemType::RED_VERI),
+      m_BlueVeriObj(Item::ItemType::BLUE_VERI)
 
 {
     float newScale = 0.73f;
@@ -52,14 +68,14 @@ Map::Map()
         LoadLevel(mapPath);
 
         // 讀取物品層
-        //std::string itemPath = RESOURCE_DIR "/Item/Item" + std::to_string(i) + ".txt";
-        //LoadItems(itemPath);
-    }
-    for (int i = 0; i < 2; ++i) {
-        // 讀取物品層
         std::string itemPath = RESOURCE_DIR "/Item/Item" + std::to_string(i) + ".txt";
         LoadItems(itemPath);
     }
+    //for (int i = 0; i < 2; ++i) {
+        // 讀取物品層
+        //std::string itemPath = RESOURCE_DIR "/Item/Item" + std::to_string(i) + ".txt";
+        //LoadItems(itemPath);
+    //}
 
 
     m_CurrentLevel = 0;
@@ -181,17 +197,22 @@ void Map::Draw() {
                 if (itemType == 10) {
                     m_YellowKeyObj.SetPosition({posX, posY});
                     m_YellowKeyObj.SetZIndex(1.0f);
-                    renderer.AddChild(std::make_shared<Key>(m_YellowKeyObj));
+                    renderer.AddChild(std::make_shared<Item>(m_YellowKeyObj));
                 }
                 else if (itemType == 11) {
                     m_BlueKeyObj.SetPosition({posX, posY});
                     m_BlueKeyObj.SetZIndex(1.0f);
-                    renderer.AddChild(std::make_shared<Key>(m_BlueKeyObj));
+                    renderer.AddChild(std::make_shared<Item>(m_BlueKeyObj));
                 }
                 else if (itemType == 12) {
                     m_RedKeyObj.SetPosition({posX, posY});
                     m_RedKeyObj.SetZIndex(1.0f);
-                    renderer.AddChild(std::make_shared<Key>(m_RedKeyObj));
+                    renderer.AddChild(std::make_shared<Item>(m_RedKeyObj));
+                }
+                else if (itemType == 30) {
+                    m_CoinObj.SetPosition({posX, posY});
+                    m_CoinObj.SetZIndex(1.0f);
+                    renderer.AddChild(std::make_shared<Item>(m_CoinObj));
                 }
                 else if (itemType == 31) {
                     m_RedPotionObj.SetPosition({posX, posY});
@@ -212,6 +233,81 @@ void Map::Draw() {
                     m_SapphireObj.SetPosition({posX, posY});
                     m_SapphireObj.SetZIndex(1.0f);
                     renderer.AddChild(std::make_shared<Item>(m_SapphireObj));
+                }
+                else if (itemType == 35) {
+                    m_SwordEObj.SetPosition({posX, posY});
+                    m_SwordEObj.SetZIndex(1.0f);
+                    renderer.AddChild(std::make_shared<Item>(m_SwordEObj));
+                }
+                else if (itemType == 36) {
+                    m_MagicKeyObj.SetPosition({posX, posY});
+                    m_MagicKeyObj.SetZIndex(1.0f);
+                    renderer.AddChild(std::make_shared<Item>(m_MagicKeyObj));
+                }
+                else if (itemType == 37) {
+                    m_ShieldCObj.SetPosition({posX, posY});
+                    m_ShieldCObj.SetZIndex(1.0f);
+                    renderer.AddChild(std::make_shared<Item>(m_ShieldCObj));
+                }
+                else if (itemType == 38) {
+                    m_SmallWingObj.SetPosition({posX, posY});
+                    m_SmallWingObj.SetZIndex(1.0f);
+                    renderer.AddChild(std::make_shared<Item>(m_SmallWingObj));
+                }
+                else if (itemType == 39) {
+                    m_CrossObj.SetPosition({posX, posY});
+                    m_CrossObj.SetZIndex(1.0f);
+                    renderer.AddChild(std::make_shared<Item>(m_CrossObj));
+                }
+                else if (itemType == 40) {
+                    m_WindCompassObj.SetPosition({posX, posY});
+                    m_WindCompassObj.SetZIndex(1.0f);
+                    renderer.AddChild(std::make_shared<Item>(m_WindCompassObj));
+                }
+                else if (itemType == 41) {
+                    m_SwordCObj.SetPosition({posX, posY});
+                    m_SwordCObj.SetZIndex(1.0f);
+                    renderer.AddChild(std::make_shared<Item>(m_SwordCObj));
+                }
+                else if (itemType == 42) {
+                    m_ShieldDObj.SetPosition({posX, posY});
+                    m_ShieldDObj.SetZIndex(1.0f);
+                    renderer.AddChild(std::make_shared<Item>(m_ShieldDObj));
+                }
+                else if (itemType == 43) {
+                    m_GemDiggerObj.SetPosition({posX, posY});
+                    m_GemDiggerObj.SetZIndex(1.0f);
+                    renderer.AddChild(std::make_shared<Item>(m_GemDiggerObj));
+                }
+                else if (itemType == 44) {
+                    m_BigWingObj.SetPosition({posX, posY});
+                    m_BigWingObj.SetZIndex(1.0f);
+                    renderer.AddChild(std::make_shared<Item>(m_BigWingObj));
+                }
+                else if (itemType == 45) {
+                    m_HolyWaterObj.SetPosition({posX, posY});
+                    m_HolyWaterObj.SetZIndex(1.0f);
+                    renderer.AddChild(std::make_shared<Item>(m_HolyWaterObj));
+                }
+                else if (itemType == 46) {
+                    m_SwordBObj.SetPosition({posX, posY});
+                    m_SwordBObj.SetZIndex(1.0f);
+                    renderer.AddChild(std::make_shared<Item>(m_SwordBObj));
+                }
+                else if (itemType == 47) {
+                    m_ShieldAObj.SetPosition({posX, posY});
+                    m_ShieldAObj.SetZIndex(1.0f);
+                    renderer.AddChild(std::make_shared<Item>(m_ShieldAObj));
+                }
+                else if (itemType == 48) {
+                    m_RebVeriObj.SetPosition({posX, posY});
+                    m_RebVeriObj.SetZIndex(1.0f);
+                    renderer.AddChild(std::make_shared<Item>(m_RebVeriObj));
+                }
+                else if (itemType == 49) {
+                    m_BlueVeriObj.SetPosition({posX, posY});
+                    m_BlueVeriObj.SetZIndex(1.0f);
+                    renderer.AddChild(std::make_shared<Item>(m_BlueVeriObj));
                 }
             }
             else if (tileType != 0) {
