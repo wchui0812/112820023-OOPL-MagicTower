@@ -6,6 +6,10 @@
 #include "Character/Player.hpp"
 #include "System/UIStatus.hpp"
 #include "System/BattleAnimation.hpp"
+#include "System/BattleScene.hpp"
+#include "System/NPCDialog.hpp"
+#include "System/RewardMessage.hpp"
+#include "System/ShopScene.hpp"
 
 class App {
 public:
@@ -30,6 +34,10 @@ private:
     State m_CurrentState = State::START;
 
     std::shared_ptr<BattleAnimation> m_BattleAnim;
+    std::shared_ptr<BattleScene> m_BattleScene;
+    std::shared_ptr<NPCDialog> m_NPCDialog;
+    std::shared_ptr<RewardMessage> m_RewardMessage;
+    std::shared_ptr<ShopScene> m_ShopScene;
 
 };
 

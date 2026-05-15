@@ -27,6 +27,15 @@ void App::Start() {
     int spawnRow = 10;
     int spawnCol = 5;
 
+    // 測試商店用：NPC2.txt 的商人在 row 10, col 9，玩家放左邊一格。
+    // 測完正式遊戲時，把 kDebugStartAtShop 改成 false。
+    const bool kDebugStartAtShop = true;
+    if (kDebugStartAtShop) {
+        m_GameMap.SetLevel(4);
+        spawnRow = 1;
+        spawnCol = 5;
+    }
+
     // 3. 計算螢幕座標
     float playerX = startX + (spawnCol * tileSize) + (tileSize / 2.0f);
     float playerY = startY - (spawnRow * tileSize) - (tileSize / 2.0f);
@@ -37,6 +46,10 @@ void App::Start() {
     m_Player->SetScale({1.6f, 1.6f});
 
     m_BattleAnim = std::make_shared<BattleAnimation>();
+    m_BattleScene = std::make_shared<BattleScene>();
+    m_NPCDialog = std::make_shared<NPCDialog>();
+    m_RewardMessage = std::make_shared<RewardMessage>();
+    m_ShopScene = std::make_shared<ShopScene>();
 
     m_CurrentState = State::UPDATE;
 }
@@ -47,26 +60,48 @@ void App::Update() {
     float deltaTime = Util::Time::GetDeltaTimeMs() / 1000.0f;
     m_GameMap.UpdateAnimation(deltaTime);
 
-    if (m_BattleAnim && m_BattleAnim->IsVisible()) {
-        if (m_BattleAnim->IsFinished()) {
-            m_BattleAnim->Reset();
-        } else {
-            // 繪製動畫並返回，不讓玩家在打架時走路
-            renderer.AddChild(m_BattleAnim);
-            renderer.Update();
-            return;
-        }
-    }
-
-    m_Player->Update(m_GameMap, *m_BattleAnim);
-    m_UI.Update(*m_Player, m_GameMap);
-
     renderer.AddChild(m_MainBackground);
     m_GameMap.Draw();
 
     renderer.AddChild(m_Player);
 
     m_UI.Draw();
+
+    if (m_BattleScene->IsActive()) {
+        m_BattleScene->Update(deltaTime);
+        m_BattleScene->Draw();
+
+        renderer.Update();
+        return;
+    }
+
+    if (m_RewardMessage->IsVisible()) {
+        m_RewardMessage->Update(deltaTime);
+        m_RewardMessage->Draw();
+
+        renderer.Update();
+        return;
+    }
+
+    if (m_NPCDialog->IsActive()) {
+        m_NPCDialog->Update(deltaTime);
+        m_NPCDialog->Draw();
+
+        renderer.Update();
+        return;
+    }
+
+    if (m_ShopScene->IsActive()) {
+        m_ShopScene->Update(deltaTime);
+        m_ShopScene->Draw();
+
+        renderer.Update();
+        return;
+    }
+
+    m_Player->Update(m_GameMap, *m_BattleAnim, *m_BattleScene, *m_RewardMessage, *m_NPCDialog, *m_ShopScene);
+    m_UI.Update(*m_Player, m_GameMap);
+
 
     renderer.Update();
 
