@@ -8,11 +8,21 @@
 class NPC : public BackgroundImage {
 public:
     enum class Type {
-        FAIRY,
-        ELDER,   // 智者（老人）
-        MERCHANT,  // 商人
+        FAIRY1,
+        FAIRY2,
+        ELDER1,
+        ELDER2,
+        ELDER3,// 智者（老人）
+        MERCHANT1,
+        MERCHANT2,// 商人
         THIEF,      // 小偷
-        PRINCESS
+        PRINCESS,
+        SHOP_1,
+        SHOP_2,
+        ELDER_SHOP_1,
+        ELDER_SHOP_2,
+        MERCHANT_SHOP_1,
+        MERCHANT_SHOP_2
     };
 
     struct Stats {
