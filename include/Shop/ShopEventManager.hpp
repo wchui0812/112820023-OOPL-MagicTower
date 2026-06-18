@@ -4,7 +4,7 @@
 #include "Character/Player.hpp"
 #include "NPC/NPC.hpp"
 #include "Shop/Shop.hpp"
-#include "System/ShopScene.hpp"
+#include "Shop/ShopScene.hpp"
 
 class ShopEventManager {
 public:

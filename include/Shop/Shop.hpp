@@ -52,7 +52,6 @@ public:
 
     const std::string& GetTitle() const { return m_Title; }
     const std::string& GetGreeting() const { return m_Greeting; }
-    const std::string& GetPortraitPath() const { return m_PortraitPath1; }
     const std::string& GetPortraitPath1() const { return m_PortraitPath1; }
     const std::string& GetPortraitPath2() const { return m_PortraitPath2; }
     const std::vector<ShopItem>& GetItems() const { return m_Items; }

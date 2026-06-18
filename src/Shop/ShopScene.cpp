@@ -1,11 +1,14 @@
-#include "System/ShopScene.hpp"
-
+#include "Shop/ShopScene.hpp"
 #include "Character/Player.hpp"
+
 #include "Util/Input.hpp"
 #include "Util/Keycode.hpp"
 #include "Util/TransformUtils.hpp"
 
 namespace {
+constexpr float kMapCenterX = -165.0f + (56.0f * 11.0f / 2.0f);
+constexpr float kMapCenterY = 308.0f - (56.0f * 11.0f / 2.0f);
+
 std::size_t GetUtf8CharLength(unsigned char c) {
     if ((c & 0x80) == 0) return 1;
     if ((c & 0xE0) == 0xC0) return 2;
@@ -17,11 +20,11 @@ std::size_t GetUtf8CharLength(unsigned char c) {
 
 ShopScene::ShopScene() {
     m_Background = std::make_shared<Util::Image>(RESOURCE_DIR "/Image/Character/Shop/ShopDialog.bmp");
-    m_Portrait = std::make_shared<Util::Image>(RESOURCE_DIR "/Image/Shop/shopkeeper.bmp");
+    m_Portrait = std::make_shared<Util::Image>(RESOURCE_DIR "/Image/Character/Shop/ShopKeeper1.png");
     m_Drawable = m_Background;
 
     m_ZIndex = 75.0f;
-    m_Transform.translation = {0.0f, 0.0f};
+    m_Transform.translation = {kMapCenterX, kMapCenterY};
 
     m_TitleText = std::make_shared<TextObject>(24, "商店", m_ZIndex + 1.0f);
     m_HintText = std::make_shared<TextObject>(18, "Up / Down   Space / Enter", m_ZIndex + 1.0f);
@@ -34,23 +37,7 @@ ShopScene::ShopScene() {
         m_OptionTexts.push_back(std::make_shared<TextObject>(24, " ", m_ZIndex + 1.0f));
     }
 
-    m_Shop = Shop(
-        "商店",
-        "你好，英雄的人類，只要你有足夠的經驗，我就可以讓你變得更強大。",
-        RESOURCE_DIR "/Image/Shop/shopkeeper.bmp",
-        {
-            {"提升一級（需要 100 點）", 100, ShopCostType::EXP, 1000, 7, 7, 1, false, "等級提升了。"},
-            {"增加攻擊 5（需要 30 點）", 30, ShopCostType::EXP, 0, 5, 0, 0, false, "攻擊力提升了 5 點。"},
-            {"增加防禦 5（需要 30 點）", 30, ShopCostType::EXP, 0, 0, 5, 0, false, "防禦力提升了 5 點。"},
-            {"離開商店", 0, ShopCostType::NONE, 0, 0, 0, 0, true, ""},
-        }
-    );
-
     SetVisible(false);
-}
-
-void ShopScene::Open(Player& player) {
-    Open(player, m_Shop);
 }
 
 void ShopScene::Open(Player& player, const Shop& shop) {
@@ -150,6 +137,7 @@ void ShopScene::ConfirmSelection() {
 
 void ShopScene::RefreshTexts() {
     m_TitleText->SetText(m_Shop.GetTitle());
+    m_TitleText->m_Transform.translation = m_Transform.translation + glm::vec2(-147.5f, 105.0f);
     SetMessage(m_Shop.GetGreeting());
     m_HintText->m_Transform.translation = m_Transform.translation + glm::vec2(140.0f, -280.0f);
 

@@ -3,6 +3,7 @@
 
 #include "System/TextObject.hpp"
 #include "Shop/Shop.hpp"
+
 #include "Util/GameObject.hpp"
 #include "Util/Image.hpp"
 
@@ -16,7 +17,6 @@ class ShopScene : public Util::GameObject {
 public:
     ShopScene();
 
-    void Open(Player& player);
     void Open(Player& player, const Shop& shop);
     void Update(float deltaTime);
     void Draw();

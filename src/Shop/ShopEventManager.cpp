@@ -1,13 +1,13 @@
-#include "System/ShopEventManager.hpp"
+#include "Shop/ShopEventManager.hpp"
 
 namespace {
     ShopItem ExitItem() {
-        return {"離開商店", 0, ShopCostType::NONE, 0, 0, 0, 0, true, ""};
+        return {"離開", 0, ShopCostType::NONE, 0, 0, 0, 0, true, ""};
     }
 
     Shop MakeMonsterShopGuide1() {
         return Shop(
-            "商店",
+            "金幣商店",
             "想要增加你的能力嗎？如果你有25個金幣，你可以任意選擇一項：",
             RESOURCE_DIR "/Image/Character/Shop/ShopA2.png",
             RESOURCE_DIR "/Image/Character/Shop/ShopB2.png",
@@ -22,7 +22,7 @@ namespace {
 
     Shop MakeMonsterShopGuide2() {
         return Shop(
-            "商店",
+            "金幣商店",
             "想要增加你的能力嗎？如果你有100個金幣，你可以任意選擇一項：",
             RESOURCE_DIR "/Image/Character/Shop/ShopA2.png",
             RESOURCE_DIR "/Image/Character/Shop/ShopB2.png",
@@ -37,7 +37,7 @@ namespace {
 
     Shop MakeExpShop1() {
         return Shop(
-            "商店",
+            "經驗老人",
             "你好，英雄的人類，只要你有足夠的經驗，我就可以讓你變得更強大：",
             RESOURCE_DIR "/Image/Character/Shop/Elder1.png",
             RESOURCE_DIR "/Image/Character/Shop/Elder2.png",
@@ -52,7 +52,7 @@ namespace {
 
     Shop MakeExpShop2() {
         return Shop(
-            "商店",
+            "經驗老人",
             "你好，英雄的人類，只要你有足夠的經驗，我就可以讓你變得更強大：",
             RESOURCE_DIR "/Image/Character/Shop/Elder1.png",
             RESOURCE_DIR "/Image/Character/Shop/Elder2.png",
@@ -67,7 +67,7 @@ namespace {
 
     Shop MakeKeyShop1() {
         return Shop(
-            "商店",
+            "商人",
             "相信你一定有特殊的需要，只要你有金幣，我就可以幫你：",
             RESOURCE_DIR "/Image/Character/Shop/ShopKeeper1.png",
             RESOURCE_DIR "/Image/Character/Shop/ShopKeeper2.png",
@@ -82,14 +82,14 @@ namespace {
 
     Shop MakeKeyShop2() {
         return Shop(
-            "商店",
-            "如果你有多餘的鑰匙，我可以用金幣向你收購：",
+            "商人",
+            "喔，歡迎你的到來，如果你手裡缺少金幣，我可幫你：",
             RESOURCE_DIR "/Image/Character/Shop/ShopKeeper1.png",
             RESOURCE_DIR "/Image/Character/Shop/ShopKeeper2.png",
             {
-                {"販賣 1 把黃鑰匙（$ 7）", 0, ShopCostType::NONE, 0, 0, 0, 0, false, "賣出一把黃鑰匙，獲得 7 金幣。", 7, -1, 0, 0},
-                {"販賣 1 把藍鑰匙（$ 35）", 0, ShopCostType::NONE, 0, 0, 0, 0, false, "賣出一把藍鑰匙，獲得 35 金幣。", 35, 0, -1, 0},
-                {"販賣 1 把紅鑰匙（$ 70）", 0, ShopCostType::NONE, 0, 0, 0, 0, false, "賣出一把紅鑰匙，獲得 70 金幣。", 70, 0, 0, -1},
+                {"賣出 1 把黃鑰匙（$ 7）", 0, ShopCostType::NONE, 0, 0, 0, 0, false, "賣出一把黃鑰匙，獲得 7 金幣。", 7, -1, 0, 0},
+                {"賣出 1 把藍鑰匙（$ 35）", 0, ShopCostType::NONE, 0, 0, 0, 0, false, "賣出一把藍鑰匙，獲得 35 金幣。", 35, 0, -1, 0},
+                {"賣出 1 把紅鑰匙（$ 70）", 0, ShopCostType::NONE, 0, 0, 0, 0, false, "賣出一把紅鑰匙，獲得 70 金幣。", 70, 0, 0, -1},
                 ExitItem(),
             }
         );

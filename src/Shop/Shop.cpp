@@ -1,5 +1,4 @@
 #include "Shop/Shop.hpp"
-
 #include "Character/Player.hpp"
 
 #include <utility>
