@@ -1,5 +1,4 @@
 #include "Item/Item.hpp"
-#include "Item/Item.hpp"
 
 Item::Item(ItemType type) : m_Type(type), BackgroundImage("") {
     std::string path;
@@ -26,7 +25,7 @@ Item::Item(ItemType type) : m_Type(type), BackgroundImage("") {
         case ItemType::SWORD_B:     path = RESOURCE_DIR "/Image/Item/sword_b.bmp"; break;
         case ItemType::SHIELD_A:    path = RESOURCE_DIR "/Image/Item/shield_a.bmp"; break;
         case ItemType::RED_VERI:    path = RESOURCE_DIR "/Image/Item/red_veri.bmp"; break;
-        case ItemType::BLUE_VERI:   path = RESOURCE_DIR "/Image/Item/blue_veri.bmp"; break;
+        case ItemType::GREEN_VERI:   path = RESOURCE_DIR "/Image/Item/green_veri.bmp"; break;
         case ItemType::GOD_KNIFE:   path = RESOURCE_DIR "/Image/Item/god_knife_sign.bmp"; break;
     }
 
