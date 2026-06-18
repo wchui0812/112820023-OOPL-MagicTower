@@ -1,13 +1,16 @@
 #include "System/TextObject.hpp"
+
 #include "Util/TransformUtils.hpp" // 必須引入這個標頭檔
 
-TextObject::TextObject(const int &size, const std::string &text, const float &zindex) {
+TextObject::TextObject(const int &size, const std::string &text, const float &zindex,
+                       const Util::Color &color) {
     m_Size = size;
+    m_Color = color;
     m_Text = std::make_shared<Util::Text>(
         RESOURCE_DIR "/Font/Cubic_11.ttf",
         size,
         text,
-        Util::Color::FromName(Util::Colors::WHITE)
+        m_Color
     );
     m_ZIndex = zindex;
 }
@@ -16,7 +19,7 @@ void TextObject::SetText(const std::string &text) {
     // 這裡的大小建議與建構子保持一致，或是儲存一個 m_Size 變數
     m_Text = std::make_shared<Util::Text>(
         RESOURCE_DIR "/Font/Cubic_11.ttf", m_Size, text,
-        Util::Color::FromName(Util::Colors::WHITE)
+        m_Color
     );
 }
 

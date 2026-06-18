@@ -1,21 +1,23 @@
 #include "Map/Map.hpp"
 #include "System/BattleScene.hpp"
 #include "System/RewardMessage.hpp"
+#include "NPC/NPCDialog.hpp"
 #include "Character/Player.hpp"
+
 #include "Util/Time.hpp"
 #include "Util/TransformUtils.hpp"
 #include <algorithm>
 
 BattleScene::BattleScene() {
-    m_BackgroundImage = std::make_shared<Util::Image>(RESOURCE_DIR "/Image/Enemy/Fighting.bmp");
-    // 2. 將圖片設定給 GameObject 的 m_Drawable，這樣才能被渲染
+    m_BackgroundImage = std::make_shared<Util::Image>(RESOURCE_DIR "/Image/Character/Enemy/Fighting.bmp");
+
     m_Drawable = m_BackgroundImage;
 
     m_VsText = std::make_shared<TextObject>(55, "VS", 51.0f);
     m_VsText->m_Transform.translation = {0.0f, 20.0f};
 
-    // 3. 設定視窗位置與層級
-    m_Transform.translation = {0.8f, 0.6f}; // 放在畫面正中央
+
+    m_Transform.translation = {0.8f, 0.6f};
     m_ZIndex = 50.0f;
 
     int fontSize = 32;
@@ -39,12 +41,12 @@ BattleScene::BattleScene() {
     m_PlayerAtkText = std::make_shared<TextObject>(fontSize, "0", z);
     m_PlayerDefText = std::make_shared<TextObject>(fontSize, "0", z);
 
-    float farX = 210.0f;    // 標籤位置
-    float nearX = 120.0f;   // 數值位置
+    float farX = 210.0f;
+    float nearX = 100.0f;
     float startY = 70.0f;
     float spacing = 55.0f;
 
-    // --- 左側 (怪物) ---
+
     m_EnemyHpLabel->m_Transform.translation = {-farX, startY};
     m_EnemyHpText->m_Transform.translation  = {-nearX, startY};
 
@@ -54,7 +56,6 @@ BattleScene::BattleScene() {
     m_EnemyDefLabel->m_Transform.translation = {-farX, startY - spacing * 2};
     m_EnemyDefText->m_Transform.translation  = {-nearX, startY - spacing * 2};
 
-    // --- 右側 (勇者) ---[cite: 1]
     m_PlayerHpText->m_Transform.translation  = {nearX, startY};
     m_PlayerHpLabel->m_Transform.translation = {farX, startY};
 
@@ -64,11 +65,10 @@ BattleScene::BattleScene() {
     m_PlayerDefText->m_Transform.translation  = {nearX, startY - spacing * 2};
     m_PlayerDefLabel->m_Transform.translation = {farX, startY - spacing * 2};
 
-    // 頭像框位置修正 (對齊你圖片中的藍框)[cite: 1]
     m_EnemyNameText->m_Transform.translation = {-340.0f, 120.0f};
     m_PlayerNameText->m_Transform.translation = {355.0f, 120.0f};
 
-    // 3. 設定初始可見度
+
     m_ZIndex = 50.0f;
     m_Active = false;
     this->SetVisible(false);
@@ -76,13 +76,31 @@ BattleScene::BattleScene() {
     m_RewardMessage = std::make_shared<RewardMessage>();
 }
 
-void BattleScene::StartBattle(Player& player, Map& map, std::shared_ptr<Enemy> enemy) {
+void BattleScene::StartBattle(Player& player, Map& map, std::shared_ptr<Enemy> enemy, NPCDialog& npcDialog) {
     m_Player = &player;
     m_Map = &map;
+    m_NPCDialog = &npcDialog;
     m_Enemy = enemy;
     m_EnemyStats = enemy->GetStats();
+    m_EnemyType = enemy->GetType();
+    m_DefeatedEnemyGrid = map.GetGridPosition(
+        enemy->m_Transform.translation.x,
+        enemy->m_Transform.translation.y
+    );
+    m_FinalBossDefeated = false;
+    m_GameOverRequested = false;
 
-    m_EnemyAvatar = std::make_shared<Util::Image>(m_EnemyStats.imagePath1);
+    if (m_EnemyType == Enemy::Type::DRAGON) {
+        m_GameOverRequested = true;
+        m_Active = false;
+        m_State = State::IDLE;
+        this->SetVisible(false);
+        return;
+    }
+
+    m_EnemyAvatarFrame1 = std::make_shared<Util::Image>(m_EnemyStats.imagePath1);
+    m_EnemyAvatarFrame2 = std::make_shared<Util::Image>(m_EnemyStats.imagePath2.empty() ? m_EnemyStats.imagePath1 : m_EnemyStats.imagePath2);
+    m_EnemyAvatar = m_EnemyAvatarFrame1;
     m_PlayerAvatar = std::make_shared<Util::Image>(RESOURCE_DIR "/Image/Character/Player/player_d1.png");
 
     m_EnemyNameText->SetText(m_EnemyStats.name);
@@ -92,12 +110,17 @@ void BattleScene::StartBattle(Player& player, Map& map, std::shared_ptr<Enemy> e
     m_PlayerAtkText->SetText(std::to_string(m_Player->m_Atk));
     m_PlayerDefText->SetText(std::to_string(m_Player->m_Def));
 
-    m_CurrentPlayerHp = player.m_Hp;
+    m_CurrentPlayerHp = player.m_Hp - m_Enemy->GetOpeningDamage(player.m_Hp);
     m_CurrentEnemyHp = m_EnemyStats.hp;
+    m_PlayerHpText->SetText(std::to_string(m_CurrentPlayerHp));
+    m_EnemyHpText->SetText(std::to_string(m_CurrentEnemyHp));
     
     m_Active = true;
     m_State = State::FIGHTING;
     m_Timer = 0.0f;
+    m_EnemyAnimationTimer = 0.0f;
+    m_ShowEnemyAltFrame = false;
+    m_PostBattleEventStarted = false;
 
     this->SetVisible(true);
 }
@@ -106,23 +129,32 @@ void BattleScene::Update(float deltaTime) {
     if (!m_Active) return;
 
     if (m_State == State::FIGHTING) {
+        m_EnemyAnimationTimer += deltaTime;
+        if (m_EnemyAnimationTimer >= m_EnemyAnimationInterval) {
+            m_EnemyAnimationTimer = 0.0f;
+            m_ShowEnemyAltFrame = !m_ShowEnemyAltFrame;
+            m_EnemyAvatar = m_ShowEnemyAltFrame ? m_EnemyAvatarFrame2 : m_EnemyAvatarFrame1;
+        }
+
         m_Timer += deltaTime;
         if (m_Timer >= m_AttackInterval) {
             m_Timer = 0.0f;
 
-            // 1. 勇者攻擊怪物
+
             int damageToEnemy = std::max(0, m_Player->m_Atk - m_EnemyStats.def);
             m_CurrentEnemyHp -= damageToEnemy;
 
-            // 2. 檢查怪物是否死亡
             if (m_CurrentEnemyHp <= 0) {
                 m_State = State::FINISHED;
                 this->SetVisible(false);
 
-                // 更新 Player 數據
+
                 m_Player->m_Hp = m_CurrentPlayerHp;
                 m_Player->m_Coin += m_EnemyStats.coin;
                 m_Player->m_Exp += m_EnemyStats.exp;
+                if (m_EnemyType == Enemy::Type::OCTOPUS) {
+                    m_FinalBossDefeated = true;
+                }
 
                 if (m_Map && m_Enemy) {
                     m_Map->RemoveEnemy(m_Enemy);
@@ -135,7 +167,7 @@ void BattleScene::Update(float deltaTime) {
                 return;
             }
 
-            // 3. 怪物反擊勇者
+
             int damageToPlayer = std::max(0, m_EnemyStats.atk - m_Player->m_Def);
             m_CurrentPlayerHp -= damageToPlayer;
 
@@ -144,11 +176,28 @@ void BattleScene::Update(float deltaTime) {
         }
     }
     else if (m_State == State::FINISHED) {
-        // 在這裡更新橫幅，偵測按鍵
+
         m_RewardMessage->Update(deltaTime);
 
-        // 當橫幅不可見時（玩家按下 Z 鍵後），才真正關閉整個 BattleScene
         if (!m_RewardMessage->IsVisible()) {
+            if (!m_PostBattleEventStarted &&
+                m_Map &&
+                m_NPCDialog &&
+                m_Map->GetCurrentLevel() == 21 &&
+                m_DefeatedEnemyGrid.x == 1 &&
+                m_DefeatedEnemyGrid.y == 5) {
+                m_PostBattleEventStarted = true;
+                m_NPCDialog->Start({
+                    {m_EnemyStats.name, "啊......怎麼可能，我怎麼可能會被你打敗呢！", m_EnemyStats.imagePath1},
+                    {m_EnemyStats.name, "不...不要這樣......", m_EnemyStats.imagePath1}
+                }, [map = m_Map]() {
+                    if (map) {
+                        map->SetTileAtLevel(21, 0, 5, 5);
+                        map->SetTileAtLevel(21, 6, 5, 0);
+                    }
+                });
+            }
+
             m_Active = false;
             m_State = State::IDLE;
         }
@@ -158,8 +207,6 @@ void BattleScene::Update(float deltaTime) {
 void BattleScene::Draw() {
     if (!m_Active) return;
 
-    // 1. 繪製背景視窗
-    // 利用 ConvertToUniformBufferData 轉換座標系統給渲染器[cite: 1]
     if (m_State == State::FIGHTING && m_Visible) {
         auto bgMatrices = Util::ConvertToUniformBufferData(
         m_Transform,
@@ -176,26 +223,25 @@ void BattleScene::Draw() {
         m_PlayerAtkLabel->Draw();
         m_PlayerDefLabel->Draw();
 
-        // 畫數值與名稱[cite: 1, 4]
+
         m_EnemyHpText->Draw();
         m_EnemyAtkText->Draw();
         m_EnemyDefText->Draw();
         m_PlayerHpText->Draw();
         m_PlayerAtkText->Draw();
         m_PlayerDefText->Draw();
-
         m_EnemyNameText->Draw();
         m_PlayerNameText->Draw();
 
-        // 2. 繪製怪物頭像 (左側)
+
         if (m_EnemyAvatar) {
             Util::Transform enemyT;
-            enemyT.translation = {-345.0f, 38.0f}; // 根據背景調整
+            enemyT.translation = {-345.0f, 38.0f};
             enemyT.scale = {2.0f, 2.0f};
             m_EnemyAvatar->Draw(Util::ConvertToUniformBufferData(enemyT, m_EnemyAvatar->GetSize(), m_ZIndex + 1));
         }
 
-        // 3. 繪製勇者頭像 (右側)
+
         if (m_PlayerAvatar) {
             Util::Transform playerT;
             playerT.translation = {345.0f, 38.0f};
@@ -203,10 +249,6 @@ void BattleScene::Draw() {
             m_PlayerAvatar->Draw(Util::ConvertToUniformBufferData(playerT, m_PlayerAvatar->GetSize(), m_ZIndex + 1));
         }
     }
-
-    // 4. 繪製文字 (利用 TextObject 內建的 Draw)
-    //m_EnemyHpText->SetText(std::to_string(m_CurrentEnemyHp));
-    //m_PlayerHpText->SetText(std::to_string(m_CurrentPlayerHp));
 
     if (m_State == State::FINISHED) {
         m_RewardMessage->Draw();

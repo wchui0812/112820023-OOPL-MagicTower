@@ -1,8 +1,8 @@
 #include "System/CollisionHandler.hpp"
 #include "System/Battle.hpp"
-#include "System/BattleAnimation.hpp"
 #include "System/BattleScene.hpp"
-#include "System/NPCEventManager.hpp"
+#include "NPC/NPCEventManager.hpp"
+
 #include "Util/Logger.hpp"
 
 #include <cmath>
@@ -11,19 +11,21 @@ bool CollisionHandler::HandleCollision(
     Player& player,
     Map& map,
     const glm::vec2& targetPos,
-    BattleAnimation& anim,
     BattleScene& battleScene,
     RewardMessage& rewardMessage,
     NPCDialog& npcDialog,
     ShopScene& shopScene
 ) {
-    (void)anim;
-
     auto enemy = map.GetEnemyAt(targetPos.x, targetPos.y);
     if (enemy) {
+        if (enemy->GetType() == Enemy::Type::DRAGON) {
+            battleScene.StartBattle(player, map, enemy, npcDialog);
+            return false;
+        }
+
         if (Battle::CanWin(player, *enemy)) {
             // 播放動畫
-            battleScene.StartBattle(player, map, enemy);
+            battleScene.StartBattle(player, map, enemy, npcDialog);
             return false;
         }
         return false;
@@ -99,12 +101,11 @@ bool CollisionHandler::HandleCollision(
             rewardMessage.ShowItem("獲得小飛羽! 跳躍一級!");
         }
         else if (tileType == 39) {
-            player.m_Hp = std::ceil(player.m_Hp * 4 / 3);
-            player.m_Atk = std::ceil(player.m_Atk * 4 / 3);
-            player.m_Def = std::ceil(player.m_Def * 4 / 3);
-            rewardMessage.ShowItem("獲得十字架!");
+            player.m_Cross = true;
+            rewardMessage.ShowItem("獲得幸運十字架！將它交給序章中的仙子，可以將自身的所有能力提升三分之一");
         }
         else if (tileType == 40) {
+            player.m_HasWindCompass = true;
             rewardMessage.ShowItem("獲得風之羅盤! 以J啟動，可以自由飛往去過的樓層");
         }
         else if (tileType == 41) {
@@ -116,8 +117,8 @@ bool CollisionHandler::HandleCollision(
             rewardMessage.ShowItem("獲得鋼盾! 防禦力 +10");
         }
         else if (tileType == 43) {
-            player.m_Atk += 7;
-            rewardMessage.ShowItem("獲得鐵鎬!");
+            player.m_HasGemDigger = true;
+            rewardMessage.ShowItem("獲得星光神鋃! 把它交給第四層的小偷，小偷便會用它打開第十八層的隱藏地面");
         }
         else if (tileType == 44) {
             player.m_Level += 3;
@@ -132,13 +133,22 @@ bool CollisionHandler::HandleCollision(
         }
         else if (tileType == 46) {
             player.m_Atk += 150;
-            rewardMessage.ShowItem("獲得聖光劍! 攻擊力 +150");
+            rewardMessage.ShowItem("獲得星光神劍! 攻擊力 +150");
         }
         else if (tileType == 47) {
             player.m_Def += 190;
-            rewardMessage.ShowItem("獲得黃金盾! 防禦力 +190");
+            rewardMessage.ShowItem("獲得神聖盾! 防禦力 +190");
+        }
+        else if (tileType == 48) {
+            player.m_RedVeri = true;
+            rewardMessage.ShowItem("獲得炎之靈杖!");
+        }
+        else if (tileType == 49) {
+            player.m_GreenVeri = true;
+            rewardMessage.ShowItem("獲得心之靈杖!");
         }
         else if (tileType == 50) {
+            player.m_HasMonsterBook = true;
             rewardMessage.ShowItem("獲得聖光徽! 以L使用，使用後可以查看怪物基本情況及能力");
         }
 
@@ -150,17 +160,40 @@ bool CollisionHandler::HandleCollision(
     // 3. 處理門 (21-25)
     if (tileType >= 21 && tileType <= 25) {
         bool canOpen = false;
+        const int currentLevel = map.GetCurrentLevel();
+        const bool isLayer23Series = currentLevel == 23 || currentLevel == 25 || currentLevel == 26;
+        const bool isFreeIronFenceLevel = currentLevel == 2 || currentLevel == 4 || currentLevel == 7 || currentLevel == 10 || currentLevel == 13 || currentLevel == 14 || currentLevel == 18;
+
         if (tileType == 21 && player.m_YellowKeys > 0) { player.m_YellowKeys--; canOpen = true; }
         else if (tileType == 22 && player.m_BlueKeys > 0) { player.m_BlueKeys--; canOpen = true; }
         else if (tileType == 23 && player.m_RedKeys > 0) { player.m_RedKeys--; canOpen = true; }
-        // 補充：綠門(24)與鐵門(25)也可以在這裡加
+        else if (tileType == 24 && currentLevel == 23) { canOpen = true; }
+        else if (tileType == 25 && isFreeIronFenceLevel) { canOpen = true; }
+        else if (tileType == 25 && isLayer23Series && map.GetEnemies().empty()) { canOpen = true; }
+        
 
         if (canOpen) {
-            map.TriggerDoorAnimation(targetPos.x, targetPos.y, tileType);
+            const int replacementTile = (tileType == 24 && currentLevel == 23) ? 5 : 0;
+            map.TriggerDoorAnimation(targetPos.x, targetPos.y, tileType, replacementTile);
         }
         return false; // 動畫播放中玩家不能立即踩上去
     }
 
     // 4. 普通行走判定 (0: 地板, 4/5: 樓梯)
-    return map.IsWalkable(targetPos.x, targetPos.y);
+    const bool canWalk = map.IsWalkable(targetPos.x, targetPos.y);
+    const glm::ivec2 targetGrid = map.GetGridPosition(targetPos.x, targetPos.y);
+    if (canWalk &&
+        map.GetCurrentLevel() == 16 &&
+        targetGrid.x == 3 &&
+        targetGrid.y == 5 &&
+        !player.m_RedDemon16DialogShown) {
+        player.m_RedDemon16DialogShown = true;
+        npcDialog.Start({
+            {"紅衣魔王", "停止吧，愚蠢的人類！", RESOURCE_DIR "/Image/Character/Enemy/MagicSergeantA1.png"},
+            {"勇士", "該停止的是你！魔王。快說，公主關在哪裡？", RESOURCE_DIR "/Image/Character/Player/player_d1.png"},
+            {"紅衣魔王", "等你打贏我再說吧！", RESOURCE_DIR "/Image/Character/Enemy/MagicSergeantA1.png"},
+        });
+    }
+
+    return canWalk;
 }

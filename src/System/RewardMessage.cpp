@@ -1,4 +1,5 @@
 #include "System/RewardMessage.hpp"
+
 #include "Util/TransformUtils.hpp"
 
 RewardMessage::RewardMessage() {
