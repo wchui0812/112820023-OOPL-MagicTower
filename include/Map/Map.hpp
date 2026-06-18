@@ -3,19 +3,21 @@
 
 #include <vector>
 #include <string>
-#include "App/BackgroundImage.hpp" // 使用你現有的背景圖片類別
+#include "App/BackgroundImage.hpp"
 #include "Map/Stair.hpp"
 #include "Map/Door.hpp"
 #include "Item/Item.hpp"
 #include "Enemy/Enemy.hpp"
 #include "NPC/NPC.hpp"
+
 #include "Util/Renderer.hpp"
 
 class Map {
 
 public:
     Map();
-    void Draw(); // 這是核心的雙層 for 迴圈所在
+    void Reset();
+    void Draw();
 
     void UpdateAnimation(float deltaTime);
 
@@ -30,7 +32,7 @@ public:
 
     // 2. 樓層切換
     void NextLevel() {
-        if (m_CurrentLevel + 1 < (int)m_MapData.size()) {
+        if (m_CurrentLevel < 24 && m_CurrentLevel + 1 < (int)m_MapData.size()) {
             m_CurrentLevel++;
             this->InitLevelEnemies(); // 確保這裡有執行
             this->InitLevelNPCs();
@@ -50,6 +52,22 @@ public:
         return m_CurrentLevel;
     }
 
+    int GetDisplayLevel() const;
+    std::string GetDisplayLevelName() const;
+
+    int GetLevelCount() const {
+        return static_cast<int>(m_MapData.size());
+    }
+
+    void SetFinalSealReleased(bool released) {
+        m_FinalSealReleased = released;
+        InitLevelEnemies();
+    }
+
+    bool IsFinalSealReleased() const {
+        return m_FinalSealReleased;
+    }
+
     // 控制樓層
     void SetLevel(const int level) {
         m_CurrentLevel = level;
@@ -60,17 +78,20 @@ public:
     // 檢查目標位置是否可以通行
     bool IsWalkable(float x, float y) const;
 
-    // 新增：尋找特定格子(如 4 或 5)在當前樓層的座標
+    glm::ivec2 GetGridPosition(float x, float y) const;
+    glm::vec2 GetTileCenter(int row, int col) const;
+
     glm::vec2 FindTilePosition(int targetType) const;
 
     void RemoveTile(float x, float y);
     void SetTileAtLevel(int level, int row, int col, int tileType);
     void RemoveTileAtLevel(int level, int row, int col);
 
-    void TriggerDoorAnimation(float x, float y, int type) {
+    void TriggerDoorAnimation(float x, float y, int type, int replacementTile = 0) {
         m_DoorAnimating = true;
         m_AnimatingDoorPos = {x, y};
         m_AnimatingDoorType = type;
+        m_DoorReplacementTile = replacementTile;
 
         // 根據類型讓對應的門物件開始播放
         if (type == 21) { m_YellowDoor.Reset(); m_YellowDoor.StartAnimation(); }
@@ -88,7 +109,7 @@ public:
 
     std::shared_ptr<Enemy> GetEnemyAt(float x, float y);
 
-    // 新增：將敵人從當前樓層移除
+    // 將敵人從當前樓層移除
     void RemoveEnemy(std::shared_ptr<Enemy> enemy);
 
     // 3. 儲存所有樓層的原始數據：[樓層][列][行]
@@ -105,6 +126,7 @@ public:
     std::shared_ptr<NPC> GetNPCAt(float x, float y);
 
     void MoveNPC(std::shared_ptr<NPC> npc, int colOffset, int rowOffset);
+    void RemoveNPC(std::shared_ptr<NPC> npc);
 
 
 private:
@@ -165,7 +187,7 @@ private:
     Item m_SwordBObj;
     Item m_ShieldAObj;
     Item m_RebVeriObj;
-    Item m_BlueVeriObj;
+    Item m_GreenVeriObj;
     Item m_GodKnifeObj;
 
     float m_AnimationTimer = 0.0f;
@@ -174,6 +196,8 @@ private:
     bool m_DoorAnimating = false;
     glm::vec2 m_AnimatingDoorPos = {0, 0};
     int m_AnimatingDoorType = 0;
+    int m_DoorReplacementTile = 0;
+    bool m_FinalSealReleased = false;
 
 
 };

@@ -1,19 +1,48 @@
 #include "Map/Map.hpp"
+
 #include "Util/Renderer.hpp"
 #include "Util/Logger.hpp"
 #include "Util/Time.hpp"
 
 #include <fstream>
-#include <iostream>
 #include <algorithm>
+#include <string>
+
+namespace {
+constexpr int kLayer23_1Index = 25;
+constexpr int kLayer23_3Index = 26;
+
+void DrawLargeEnemy(Util::Renderer& renderer, const Enemy& enemy, const std::string& imagePrefix, float tileSize) {
+    const glm::vec2 markerPos = enemy.m_Transform.translation;
+
+    for (int part = 1; part <= 9; ++part) {
+        const int localRow = (part - 1) / 3;
+        const int localCol = (part - 1) % 3;
+        const int markerLocalRow = 2;
+        const int markerLocalCol = 1;
+
+        const int rowOffset = localRow - markerLocalRow;
+        const int colOffset = localCol - markerLocalCol;
+        const glm::vec2 partPos = markerPos + glm::vec2(colOffset * tileSize, -rowOffset * tileSize);
+
+        auto partImage = std::make_shared<BackgroundImage>(
+            std::string(RESOURCE_DIR "/Image/Character/Enemy/") + imagePrefix + std::to_string(part) + ".png"
+        );
+        partImage->SetPosition(partPos);
+        partImage->SetScale({1.75f, 1.75f});
+        partImage->SetZIndex(5.0f);
+        renderer.AddChild(partImage);
+    }
+}
+}
 
 Map::Map() 
-    : m_Wall(RESOURCE_DIR "/Image/Road/wall_b.bmp"),
-      m_Floor(RESOURCE_DIR "/Image/Road/road.bmp"),
-      m_Lava1(RESOURCE_DIR "/Image/Road/lava.bmp"),
-      m_Lava2(RESOURCE_DIR "/Image/Road/lava2.bmp"),
-      m_Shine1(RESOURCE_DIR "/Image/Road/wall_shine.bmp"),
-      m_Shine2(RESOURCE_DIR "/Image/Road/wall_shine2.bmp"),
+    : m_Wall(RESOURCE_DIR "/Image/Background/Road/wall_b.bmp"),
+      m_Floor(RESOURCE_DIR "/Image/Background/Road/road.bmp"),
+      m_Lava1(RESOURCE_DIR "/Image/Background/Road/lava.bmp"),
+      m_Lava2(RESOURCE_DIR "/Image/Background/Road/lava2.bmp"),
+      m_Shine1(RESOURCE_DIR "/Image/Background/Road/wall_shine.bmp"),
+      m_Shine2(RESOURCE_DIR "/Image/Background/Road/wall_shine2.bmp"),
       m_UpStairs(RESOURCE_DIR "/Image/Background/Stair/upstair.bmp"),   // 5
       m_DownStairs(RESOURCE_DIR "/Image/Background/Stair/downstair.bmp"), // 4
       m_YellowDoor(Door::DoorType::YELLOW),
@@ -43,7 +72,7 @@ Map::Map()
       m_SwordBObj(Item::ItemType::SWORD_B),
       m_ShieldAObj(Item::ItemType::SHIELD_A),
       m_RebVeriObj(Item::ItemType::RED_VERI),
-      m_BlueVeriObj(Item::ItemType::BLUE_VERI),
+      m_GreenVeriObj(Item::ItemType::GREEN_VERI),
       m_GodKnifeObj(Item::ItemType::GOD_KNIFE)
 
 {
@@ -64,36 +93,92 @@ Map::Map()
 
     m_TileSize = 56.0f;
 
+    auto loadFloorDataFiles = [&](const std::string& layerName,
+                                  const std::string& itemName,
+                                  const std::string& enemyName,
+                                  const std::string& npcName,
+                                  bool hasNPC = true) {
+        LoadLevel(std::string(RESOURCE_DIR "/Layer/layer") + layerName + ".txt");
+        LoadItems(std::string(RESOURCE_DIR "/Item/Item") + itemName + ".txt");
+        LoadEnemies(std::string(RESOURCE_DIR "/Enemy/Enemy") + enemyName + ".txt");
+        if (hasNPC) {
+            LoadNPCs(std::string(RESOURCE_DIR "/NPC/NPC") + npcName + ".txt");
+        } else {
+            m_NPCRawData.push_back(std::vector<std::vector<int>>(11, std::vector<int>(11, 0)));
+        }
+    };
+
+    auto loadFloorData = [&](const std::string& name, bool hasNPC = true) {
+        loadFloorDataFiles(name, name, name, name, hasNPC);
+    };
+
     for (int i = 0; i < 25; ++i) {
-        // 讀取地圖層
-        std::string mapPath = RESOURCE_DIR "/Layer/layer" + std::to_string(i) + ".txt";
-        LoadLevel(mapPath);
-
-        // 讀取物品層
-        std::string itemPath = RESOURCE_DIR "/Item/Item" + std::to_string(i) + ".txt";
-        LoadItems(itemPath);
-
-        std::string enemyPath = RESOURCE_DIR "/Enemy/Enemy" + std::to_string(i) + ".txt";
-        LoadEnemies(enemyPath);
-
-        std::string npcPath = RESOURCE_DIR "/NPC/NPC" + std::to_string(i) + ".txt";
-        LoadNPCs(npcPath);
+        loadFloorData(std::to_string(i));
     }
-    //for (int i = 0; i < 7; ++i) {
-        // 讀取物品層
-        //std::string enemyPath = RESOURCE_DIR "/Enemy/Enemy" + std::to_string(i) + ".txt";
-        //LoadEnemies(enemyPath);
-    //}
-
+    loadFloorData("23_1", false);
+    loadFloorData("23_3", false);
 
     m_CurrentLevel = 0;
     InitLevelEnemies();
     InitLevelNPCs();
 }
 
+void Map::Reset() {
+    m_CurrentLevel = 0;
+    m_MapData.clear();
+    m_ItemData.clear();
+    m_EnemyRawData.clear();
+    m_NPCRawData.clear();
+    m_Enemies.clear();
+    m_NPCs.clear();
+    m_NPCVisualParts.clear();
+
+    m_AnimationTimer = 0.0f;
+    m_ShowAltFrame = false;
+    m_DoorAnimating = false;
+    m_AnimatingDoorPos = {0.0f, 0.0f};
+    m_AnimatingDoorType = 0;
+    m_DoorReplacementTile = 0;
+    m_FinalSealReleased = false;
+
+    m_YellowDoor.Reset();
+    m_BlueDoor.Reset();
+    m_RedDoor.Reset();
+    m_GreenDoor.Reset();
+    m_IronFence.Reset();
+
+    auto loadFloorDataFiles = [&](const std::string& layerName,
+                                  const std::string& itemName,
+                                  const std::string& enemyName,
+                                  const std::string& npcName,
+                                  bool hasNPC = true) {
+        LoadLevel(std::string(RESOURCE_DIR "/Layer/layer") + layerName + ".txt");
+        LoadItems(std::string(RESOURCE_DIR "/Item/Item") + itemName + ".txt");
+        LoadEnemies(std::string(RESOURCE_DIR "/Enemy/Enemy") + enemyName + ".txt");
+        if (hasNPC) {
+            LoadNPCs(std::string(RESOURCE_DIR "/NPC/NPC") + npcName + ".txt");
+        } else {
+            m_NPCRawData.push_back(std::vector<std::vector<int>>(11, std::vector<int>(11, 0)));
+        }
+    };
+
+    auto loadFloorData = [&](const std::string& name, bool hasNPC = true) {
+        loadFloorDataFiles(name, name, name, name, hasNPC);
+    };
+
+    for (int i = 0; i < 25; ++i) {
+        loadFloorData(std::to_string(i));
+    }
+    loadFloorData("23_1", false);
+    loadFloorData("23_3", false);
+
+    InitLevelEnemies();
+    InitLevelNPCs();
+}
+
 void Map::UpdateAnimation(float deltaTime) {
     m_AnimationTimer += deltaTime;
-    if (m_AnimationTimer >= 0.5f) { // 每 0.5 秒切換一次
+    if (m_AnimationTimer >= 0.5f) {
         m_ShowAltFrame = !m_ShowAltFrame;
         m_AnimationTimer = 0.0f;
     }
@@ -109,10 +194,10 @@ void Map::LoadLevel(const std::string& filePath) {
     std::vector<std::vector<int>> tempLevel(11, std::vector<int>(11));
     for (int i = 0; i < 11; ++i) {
         for (int j = 0; j < 11; ++j) {
-            // 直接將檔案中的數字讀入二維陣列
+
             if (!(file >> tempLevel[i][j])) {
                 LOG_ERROR("Map file format error: {}", filePath);
-                // 處理格式不符的情況
+
             }
         }
     }
@@ -133,11 +218,11 @@ void Map::LoadItems(const std::string& filePath) {
     for (int i = 0; i < 11; ++i) {
         for (int j = 0; j < 11; ++j) {
             if (!(file >> tempItems[i][j])) {
-                tempItems[i][j] = 0; // 讀取失敗預設為空
+                tempItems[i][j] = 0;
             }
         }
     }
-    m_ItemData.push_back(tempItems); // 加入對應樓層
+    m_ItemData.push_back(tempItems);
     file.close();
 
     LOG_INFO("Item layer loaded successfully: {}", filePath);
@@ -169,17 +254,17 @@ void Map::LoadNPCs(const std::string& filePath) {
         return;
     }
 
-    // 建立一個 11x11 的二維向量來暫存這一層的 NPC 配置
+
     std::vector<std::vector<int>> levelData(11, std::vector<int>(11));
     for (int i = 0; i < 11; i++) {
         for (int j = 0; j < 11; j++) {
             if (!(file >> levelData[i][j])) {
-               levelData[i][j] = 0; // 讀取失敗預設為 0 (無 NPC)
+               levelData[i][j] = 0;
             }
         }
     }
 
-    // 將這一層的數據推入三維向量 m_NPCRawData 中
+
     m_NPCRawData.push_back(levelData);
     file.close();
 
@@ -214,22 +299,25 @@ void Map::Draw() {
                 else if (m_AnimatingDoorType == 25) animTarget = &m_IronFence;
 
                 if (animTarget) {
-                    // 只有這一格會觸發 UpdateAnimation
+
                     animTarget->UpdateAnimation(Util::Time::GetDeltaTimeMs() / 1000.0f);
 
                     if (animTarget->IsFinished()) {
                         m_DoorAnimating = false;
-                        RemoveTile(posX, posY); // 播完後移除格子資料
-                        animTarget->Reset();    // 重置回第一幀供下次使用
+                        RemoveTile(posX, posY);
+                        animTarget->Reset();
+                        currentItems[i][j] = 0;
+                        currentMap[i][j] = m_DoorReplacementTile;
+                        m_DoorReplacementTile = 0;
                     } else {
                         animTarget->SetPosition({posX, posY});
                         renderer.AddChild(std::shared_ptr<Util::GameObject>(std::shared_ptr<Util::GameObject>(), animTarget));
-                        continue; // 畫完動畫門後跳過，不執行下方的一般繪製
+                        continue;
                     }
                 }
             }
 
-            // --- 第一層：永遠繪製地板作為底色 ---
+
             m_Floor.SetPosition({posX, posY});
             m_Floor.SetZIndex(0.0f);
             renderer.AddChild(std::make_shared<BackgroundImage>(m_Floor));
@@ -243,9 +331,9 @@ void Map::Draw() {
             }
 
 
-            // --- 第二層：優先判定物品層，若無物品則判定地形層 ---
+
             if (itemType != 0) {
-                // 根據物品編號選取物件（從您的 Item 檔案路徑載入的物件）
+
                 if (itemType == 10) {
                     m_YellowKeyObj.SetPosition({posX, posY});
                     m_YellowKeyObj.SetZIndex(1.0f);
@@ -357,9 +445,9 @@ void Map::Draw() {
                     renderer.AddChild(std::make_shared<Item>(m_RebVeriObj));
                 }
                 else if (itemType == 49) {
-                    m_BlueVeriObj.SetPosition({posX, posY});
-                    m_BlueVeriObj.SetZIndex(1.0f);
-                    renderer.AddChild(std::make_shared<Item>(m_BlueVeriObj));
+                    m_GreenVeriObj.SetPosition({posX, posY});
+                    m_GreenVeriObj.SetZIndex(1.0f);
+                    renderer.AddChild(std::make_shared<Item>(m_GreenVeriObj));
                 }
                 else if (itemType == 50) {
                     m_GodKnifeObj.SetPosition({posX, posY});
@@ -368,13 +456,13 @@ void Map::Draw() {
                 }
             }
             else if (tileType != 0) {
-                // 原有的地形判定
-                if (tileType == 1) { // 牆壁
+
+                if (tileType == 1) {
                     m_Wall.SetPosition({posX, posY});
                     m_Wall.SetZIndex(1.0f);
                     renderer.AddChild(std::make_shared<BackgroundImage>(m_Wall));
                 }
-                else if (tileType == 2) { // 岩漿
+                else if (tileType == 2) {
                     if (m_ShowAltFrame) {
                         m_Lava2.SetPosition({posX, posY});
                         m_Lava2.SetZIndex(1.0f);
@@ -385,7 +473,7 @@ void Map::Draw() {
                         renderer.AddChild(std::make_shared<BackgroundImage>(m_Lava1));
                     }
                 }
-                else if (tileType == 3) { // 閃爍牆
+                else if (tileType == 3) {
                     if (m_ShowAltFrame) {
                         m_Shine2.SetPosition({posX, posY});
                         m_Shine2.SetZIndex(1.0f);
@@ -407,8 +495,7 @@ void Map::Draw() {
                     renderer.AddChild(std::make_shared<BackgroundImage>(m_DownStairs));
                 }
                 else if (tileType >= 21 && tileType <= 25) {
-                    // 【非動畫格】：建立一個「臨時物件」
-                    // 這樣它永遠只會顯示第一影格，且不會被 animTarget->UpdateAnimation() 影響
+
                     Door::DoorType type;
                     if (tileType == 21) type = Door::DoorType::YELLOW;
                     else if (tileType == 22) type = Door::DoorType::BLUE;
@@ -416,12 +503,11 @@ void Map::Draw() {
                     else if (tileType == 24) type = Door::DoorType::GREEN;
                     else type = Door::DoorType::IRON;
 
-                    // 建立臨時局部物件 tempDoor
+
                     auto tempDoor = std::make_shared<Door>(type);
                     tempDoor->SetPosition({posX, posY});
                     tempDoor->SetZIndex(1.0f);
 
-                    // 將這個臨時物件交給渲染器
                     renderer.AddChild(tempDoor);
                 }
 
@@ -435,12 +521,21 @@ void Map::Draw() {
     }
 
     for (auto& enemy : m_Enemies) {
+        if (enemy->GetType() == Enemy::Type::OCTOPUS) {
+            DrawLargeEnemy(renderer, *enemy, "Octopus", m_TileSize);
+            continue;
+        }
+        if (enemy->GetType() == Enemy::Type::DRAGON) {
+            DrawLargeEnemy(renderer, *enemy, "Drangon", m_TileSize);
+            continue;
+        }
+
         enemy->UpdateImage(m_ShowAltFrame);
         renderer.AddChild(enemy);
     }
 
     for (auto& npc : m_NPCs) {
-        npc->UpdateImage(m_ShowAltFrame); // 跟岩漿、敵人同步動畫
+        npc->UpdateImage(m_ShowAltFrame);
         renderer.AddChild(npc);
     }
 
@@ -457,13 +552,11 @@ int Map::GetTileType(float x, float y) const {
     float startX = -165.0f;
     float startY = 308.0f;
 
-    // 換算成索引
     int col = static_cast<int>((x - startX + 0.1f) / m_TileSize);
     int row = static_cast<int>((startY - y + 0.1f) / m_TileSize);
 
-    // 邊界安全檢查
     if (row < 0 || row >= 11 || col < 0 || col >= 11) {
-        return -1; // 超出範圍
+        return -1;
     }
 
     if (m_ItemData[m_CurrentLevel][row][col] != 0) {
@@ -473,31 +566,57 @@ int Map::GetTileType(float x, float y) const {
     return m_MapData[m_CurrentLevel][row][col];
 }
 
+int Map::GetDisplayLevel() const {
+    if (m_CurrentLevel == kLayer23_1Index || m_CurrentLevel == kLayer23_3Index) {
+        return 23;
+    }
+    return m_CurrentLevel;
+}
+
+std::string Map::GetDisplayLevelName() const {
+    if (m_CurrentLevel == 0) {
+        return "序章";
+    }
+    if (m_CurrentLevel == 24) {
+        return "地下層";
+    }
+    return "第" + std::to_string(GetDisplayLevel()) + "層";
+}
+
+glm::ivec2 Map::GetGridPosition(float x, float y) const {
+    int col = static_cast<int>((x - m_StartX + 0.1f) / m_TileSize);
+    int row = static_cast<int>((m_StartY - y + 0.1f) / m_TileSize);
+    return {row, col};
+}
+
+glm::vec2 Map::GetTileCenter(int row, int col) const {
+    float posX = m_StartX + (col * m_TileSize) + (m_TileSize / 2.0f);
+    float posY = m_StartY - (row * m_TileSize) - (m_TileSize / 2.0f);
+    return {posX, posY};
+}
+
 bool Map::IsWalkable(float x, float y) const {
-    // 1. 計算偏移量（與 Draw 函式一致）
+
     float startX = -165.0f;
     float startY = 308.0f;
     float mapSize = 11.0f * m_TileSize;
 
     if (x < startX || x >= (startX + mapSize) ||
         y > startY || y <= (startY - mapSize)) {
-        return false; // 直接擋掉，不讓它進去算索引
+        return false;
         }
 
-    // 2. 將螢幕座標 (x, y) 轉換為陣列索引 (row, col)
     int col = static_cast<int>((x - startX + 0.1f) / m_TileSize);
     int row = static_cast<int>((startY - y + 0.1f) / m_TileSize);
 
-    // 3. 邊界檢查：超出 11x11 範圍視為不能走
+
     if (row < 0 || row >= 11 || col < 0 || col >= 11) {
         return false;
     }
 
-    // 取得當前樓層的格子數值
-    //int tileType = m_MapData[m_CurrentLevel][row][col];
+
     int tileType = GetTileType(x, y);
 
-    // 4. 通行判斷：地板(0)、下樓梯(4)、上樓梯(5)
     return (tileType == 0 || tileType == 4 || tileType == 5);
 }
 
@@ -515,7 +634,7 @@ glm::vec2 Map::FindTilePosition(int targetType) const {
             }
         }
     }
-    return {0.0f, 0.0f}; // 若沒找到則回傳中心點
+    return {0.0f, 0.0f};
 }
 
 void Map::RemoveTile(float x, float y) {
@@ -526,10 +645,10 @@ void Map::RemoveTile(float x, float y) {
     int row = static_cast<int>((startY - y + 0.1f) / m_TileSize);
 
     if (row >= 0 && row < 11 && col >= 0 && col < 11) {
-        // 修改物品層資料，將其設為 0（空格）
+
         m_ItemData[m_CurrentLevel][row][col] = 0;
         m_MapData[m_CurrentLevel][row][col] = 0;
-        //LOG_INFO("Item removed, floor: {}, coordinates: ({}, {})", m_CurrentLevel, row, col);
+
     }
 }
 
@@ -552,20 +671,15 @@ void Map::RemoveTileAtLevel(int level, int row, int col) {
 }
 
 void Map::InitLevelEnemies() {
-    m_Enemies.clear(); // 清空上一層的敵人
-    //LOG_DEBUG("Cleared enemies. Current Level: {}, Enemy count: {}", m_CurrentLevel, m_Enemies.size());
-
+    m_Enemies.clear();
     if (m_CurrentLevel >= static_cast<int>(m_EnemyRawData.size())) return;
 
     int level = m_CurrentLevel;
     for (int row = 0; row < 11; row++) {
         for (int col = 0; col < 11; col++) {
             int id = m_EnemyRawData[level][row][col];
-            if (id <= 0) continue; // 0 代表沒怪物
+            if (id <= 0) continue;
 
-            //if (id > 0) {
-            //    LOG_DEBUG("Found Enemy ID: {} at Row: {}, Col: {}", id, row, col);
-            //}
 
             std::shared_ptr<Enemy> enemy = nullptr;
 
@@ -600,10 +714,15 @@ void Map::InitLevelEnemies() {
             else if (id == 78) enemy =  std::make_shared<Enemy>(Enemy::Type::MAGIC_SERGEANT_A);
             else if (id == 79) enemy =  std::make_shared<Enemy>(Enemy::Type::SLIME_MAN);
             else if (id == 80) enemy =  std::make_shared<Enemy>(Enemy::Type::VAMPIRE);
-            else if (id == 81) enemy =  std::make_shared<Enemy>(Enemy::Type::OCTOPUS);
+            else if (id == 81) {
+                enemy = std::make_shared<Enemy>(
+                    m_FinalSealReleased ? Enemy::Type::OCTOPUS : Enemy::Type::DRAGON
+                );
+            }
             else if (id == 82) enemy =  std::make_shared<Enemy>(Enemy::Type::DRAGON);
 
             if (enemy) {
+                enemy->ApplyLevelStats(GetDisplayLevel());
                 float posX = m_StartX + (col * m_TileSize) + (m_TileSize / 2.0f);
                 float posY = m_StartY - (row * m_TileSize) - (m_TileSize / 2.0f);
                 enemy->SetPosition({posX, posY});
@@ -615,10 +734,10 @@ void Map::InitLevelEnemies() {
 
 std::shared_ptr<Enemy> Map::GetEnemyAt(float x, float y) {
     for (auto& enemy : m_Enemies) {
-        // 修正點：使用 m_Transform.translation 獲取 glm::vec2 座標
+
         glm::vec2 pos = enemy->m_Transform.translation;
 
-        // 判定玩家目標座標與怪物座標是否重疊 (容許誤差 5.0f)
+
         if (std::abs(pos.x - x) < 5.0f && std::abs(pos.y - y) < 5.0f) {
             return enemy;
         }
@@ -751,5 +870,25 @@ void Map::MoveNPC(std::shared_ptr<NPC> npc, int colOffset, int rowOffset) {
 
         LOG_INFO("NPC moved to ({}, {})", newRow, newCol);
     }
+}
+
+void Map::RemoveNPC(std::shared_ptr<NPC> npc) {
+    if (!npc) return;
+
+    glm::vec2 pos = npc->m_Transform.translation;
+    int col = static_cast<int>((pos.x - m_StartX + 0.1f) / m_TileSize);
+    int row = static_cast<int>((m_StartY - pos.y + 0.1f) / m_TileSize);
+
+    if (m_CurrentLevel >= 0 &&
+        m_CurrentLevel < static_cast<int>(m_NPCRawData.size()) &&
+        row >= 0 && row < 11 &&
+        col >= 0 && col < 11) {
+        m_NPCRawData[m_CurrentLevel][row][col] = 0;
+    }
+
+    m_NPCs.erase(
+        std::remove(m_NPCs.begin(), m_NPCs.end(), npc),
+        m_NPCs.end()
+    );
 }
 
