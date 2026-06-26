@@ -125,7 +125,7 @@ void App::Start() {
 }
 
 void App::Update() {
-    static Util::Renderer renderer;
+    Util::Renderer renderer;
 
     const float deltaTime = Util::Time::GetDeltaTimeMs() / 1000.0f;
 
